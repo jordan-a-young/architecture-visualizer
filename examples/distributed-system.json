@@ -1,0 +1,495 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "title": "Commerce Platform",
+    "environment": "Example only"
+  },
+  "groups": [
+    {
+      "id": "experience",
+      "label": "Experience"
+    },
+    {
+      "id": "services",
+      "label": "Services"
+    },
+    {
+      "id": "data",
+      "label": "Data & messaging"
+    },
+    {
+      "id": "shared",
+      "label": "Shared components"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "frontend",
+      "label": "Web Application",
+      "type": "application",
+      "group": "experience",
+      "description": "Customer-facing application for browsing products and managing orders.",
+      "tags": ["production", "public"],
+      "metadata": {
+        "team": "Experience",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "frontend"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/frontend",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/frontend",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/frontend",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "gateway",
+      "label": "API Gateway",
+      "type": "gateway",
+      "group": "services",
+      "description": "Routes client requests to domain services.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "gateway"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/gateway",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/gateway",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/gateway",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "users",
+      "label": "Users Service",
+      "type": "service",
+      "group": "services",
+      "description": "Manages customer profiles and preferences.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "users"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/users",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/users",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/users",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "label": "Orders Service",
+      "type": "service",
+      "group": "services",
+      "description": "Coordinates order creation and asynchronous fulfillment.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "orders"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/orders",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/orders",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/orders",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "label": "Catalog Service",
+      "type": "service",
+      "group": "services",
+      "description": "Provides product availability and catalog information.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "catalog"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/catalog",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/catalog",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/catalog",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "users-db",
+      "label": "Users Database",
+      "type": "database",
+      "group": "data",
+      "description": "Persists customer profiles.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "n/a",
+        "environment": "production",
+        "repository": "users-db"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/users-db",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/users-db",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/users-db",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "orders-db",
+      "label": "Orders Database",
+      "type": "database",
+      "group": "data",
+      "description": "Stores orders and fulfillment state.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "n/a",
+        "environment": "production",
+        "repository": "orders-db"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/orders-db",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/orders-db",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/orders-db",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "queue",
+      "label": "Order Events",
+      "type": "queue",
+      "group": "data",
+      "description": "Buffers order-created events for asynchronous processing.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "n/a",
+        "environment": "production",
+        "repository": "queue"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/queue",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/queue",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/queue",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "label": "Fulfillment Worker",
+      "type": "worker",
+      "group": "services",
+      "description": "Processes order events and updates fulfillment status.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "worker"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/worker",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/worker",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/worker",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    },
+    {
+      "id": "shared",
+      "label": "Shared Contracts",
+      "type": "library",
+      "group": "shared",
+      "description": "Versioned types and message contracts shared across applications.",
+      "tags": ["production", "internal"],
+      "metadata": {
+        "team": "Platform",
+        "language": "TypeScript",
+        "environment": "production",
+        "repository": "shared"
+      },
+      "links": [
+        {
+          "label": "README",
+          "href": "https://example.com/docs/shared",
+          "type": "documentation",
+          "external": true
+        },
+        {
+          "label": "Source",
+          "href": "https://example.com/source/shared",
+          "type": "source",
+          "external": true
+        },
+        {
+          "label": "Dashboard",
+          "href": "https://example.com/dashboards/shared",
+          "type": "observability",
+          "external": true
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "frontend",
+      "target": "gateway",
+      "type": "calls",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e2",
+      "source": "gateway",
+      "target": "users",
+      "type": "routes-to",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e3",
+      "source": "gateway",
+      "target": "orders",
+      "type": "routes-to",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e4",
+      "source": "gateway",
+      "target": "catalog",
+      "type": "routes-to",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e5",
+      "source": "users",
+      "target": "users-db",
+      "type": "reads",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e6",
+      "source": "orders",
+      "target": "orders-db",
+      "type": "writes",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e7",
+      "source": "orders",
+      "target": "queue",
+      "type": "publishes",
+      "metadata": {
+        "transport": "event"
+      }
+    },
+    {
+      "id": "e8",
+      "source": "queue",
+      "target": "worker",
+      "type": "delivers",
+      "metadata": {
+        "transport": "event"
+      }
+    },
+    {
+      "id": "e9",
+      "source": "worker",
+      "target": "orders-db",
+      "type": "writes",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e10",
+      "source": "orders",
+      "target": "catalog",
+      "type": "calls",
+      "metadata": {
+        "transport": "request"
+      }
+    },
+    {
+      "id": "e11",
+      "source": "frontend",
+      "target": "shared",
+      "type": "depends-on",
+      "metadata": {
+        "transport": "in-process"
+      }
+    },
+    {
+      "id": "e12",
+      "source": "users",
+      "target": "shared",
+      "type": "depends-on",
+      "metadata": {
+        "transport": "in-process"
+      }
+    },
+    {
+      "id": "e13",
+      "source": "orders",
+      "target": "shared",
+      "type": "depends-on",
+      "metadata": {
+        "transport": "in-process"
+      }
+    },
+    {
+      "id": "e14",
+      "source": "worker",
+      "target": "shared",
+      "type": "depends-on",
+      "metadata": {
+        "transport": "in-process"
+      }
+    }
+  ]
+}

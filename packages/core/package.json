@@ -1,0 +1,41 @@
+{
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "name": "archgraph-core",
+  "description": "Provider-independent architecture graph schemas, validation, and traversal.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jordan-a-young/architecture-visualizer.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/jordan-a-young/architecture-visualizer#readme",
+  "bugs": {
+    "url": "https://github.com/jordan-a-young/architecture-visualizer/issues"
+  }
+}
