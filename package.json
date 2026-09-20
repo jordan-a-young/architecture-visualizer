@@ -1,0 +1,39 @@
+{
+  "name": "architecture-visualizer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter archgraph-core build && pnpm --filter archgraph-react build && pnpm --filter archgraph-demo dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter archgraph-core build && pnpm --filter archgraph-react build && pnpm -r typecheck && tsc -p tsconfig.tools.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "check": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
+    "pack:packages": "pnpm --filter archgraph-core pack --pack-destination ./artifacts && pnpm --filter archgraph-react pack --pack-destination ./artifacts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:consumer": "pnpm pack:packages && node scripts/consumer-smoke.mjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "1.62.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.19.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.39.0",
+    "jsdom": "^26.1.0",
+    "prettier": "3.6.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vitest": "^3.2.4"
+  }
+}
