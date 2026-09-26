@@ -9,6 +9,33 @@ import type { LayoutResult } from './layout.js';
 import type { ArchitectureViewerProps } from './types.js';
 import { DefaultNodeRenderer, getNodeColor } from './Node.js';
 import { GraphEdge } from './Edge.js';
+import { captureViewport } from './screenshot.js';
+import type { ArchitectureViewerHandle } from './types.js';
+
+function CaptureBridge({
+  onCaptureReady,
+}: Pick<GraphSceneProps, 'onCaptureReady'>) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    onCaptureReady?.((options) => {
+      const viewport = gl.domElement.closest<HTMLElement>('.av-viewport');
+      if (!viewport || gl.getContext().isContextLost())
+        return Promise.reject(new Error('The 3D view is unavailable.'));
+      return captureViewport(
+        gl.domElement,
+        viewport,
+        () => {
+          if (gl.getContext().isContextLost())
+            throw new Error('The 3D view is unavailable.');
+          gl.render(scene, camera);
+        },
+        options,
+      );
+    });
+    return () => onCaptureReady?.(null);
+  }, [gl, scene, camera, onCaptureReady]);
+  return null;
+}
 function CameraRig({
   positions,
   reset,
@@ -67,6 +94,9 @@ function CameraRig({
   );
 }
 export interface GraphSceneProps {
+  onCaptureReady?: (
+    capture: ArchitectureViewerHandle['captureScreenshot'] | null,
+  ) => void;
   graph: ArchitectureGraph;
   positions: LayoutResult;
   selectedId: string | null;
@@ -87,6 +117,7 @@ function SupportedScene({
   nodeRenderers,
   edgeStyle,
   showEdgeLabels,
+  onCaptureReady,
 }: GraphSceneProps) {
   const connected = useMemo(
     () =>
@@ -127,6 +158,7 @@ function SupportedScene({
       <ambientLight intensity={1.5} />
       <directionalLight position={[8, 15, 10]} intensity={2} />
       <CameraRig positions={positions} reset={reset} />
+      <CaptureBridge onCaptureReady={onCaptureReady} />
       <gridHelper
         args={[100, 50, '#dce1e7', '#e8ecf0']}
         position={[0, -0.8, 0]}
@@ -195,6 +227,8 @@ function SupportedScene({
             >
               <button
                 type="button"
+                data-av-export-label="node"
+                data-node-id={node.id}
                 className={`av-node-label${selected ? ' av-node-label-selected' : ''}`}
                 style={{ opacity: dimmed ? 0.45 : 1 }}
                 aria-pressed={selected}

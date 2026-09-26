@@ -41,6 +41,8 @@ export interface ArchitectureViewerProps {
   edgeStyle?: (edge: ArchitectureEdge) => EdgeStyle;
   showEdgeLabels?: boolean;
   showDetailsPanel?: boolean;
+  /** Show the PNG download button. The imperative capture API remains available. */
+  showScreenshotButton?: boolean;
   renderDetails?: (props: DetailsPanelProps) => ReactNode;
   className?: string;
   style?: CSSProperties;
@@ -48,4 +50,10 @@ export interface ArchitectureViewerProps {
 }
 export interface ArchitectureViewerHandle {
   resetCamera: () => void;
+  /** Current camera view at canvas resolution, excluding viewer chrome and inspector. */
+  captureScreenshot: (options?: ScreenshotOptions) => Promise<Blob>;
+}
+export interface ScreenshotOptions {
+  /** Include built-in node and relationship labels. Defaults to true. */
+  includeLabels?: boolean;
 }
