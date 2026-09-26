@@ -87,7 +87,9 @@ export function GraphEdge({
           style={{ pointerEvents: 'none', opacity }}
           zIndexRange={[20, 0]}
         >
-          <span className="av-edge-label">{edge.label ?? edge.type}</span>
+          <span className="av-edge-label" data-av-export-label="edge">
+            {edge.label ?? edge.type}
+          </span>
         </Html>
       )}
     </group>

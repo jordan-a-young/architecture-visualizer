@@ -160,17 +160,19 @@ A single click selects without navigating. Selection emphasizes the node and inc
 
 The viewer validates graph input before mounting the scene. Invalid graphs show an error panel; consumers can call `validateGraph` to expose all warnings themselves. Replace graph/filter/layout references when changing data so memoized computations update.
 
-| Viewer prop / API                    | Purpose                                                               |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| `highlightedNodeIds`                 | Additional emphasized nodes                                           |
-| `filters` / `useFilteredGraph`       | Pure induced-graph filtering                                          |
-| `layout="layered"` or function       | Deterministic automatic or custom layout                              |
-| `nodeRenderers`                      | Per-type custom geometry                                              |
-| `edgeStyle(edge)`                    | Custom color, width and dash overrides                                |
-| `showEdgeLabels`                     | All relationship labels; incident labels show on selection by default |
-| `showDetailsPanel` / `renderDetails` | Hide or replace the inspector                                         |
-| `className`, `style`, `ariaLabel`    | Host styling and accessible naming                                    |
-| `ref.resetCamera()`                  | Fit the visible graph, also available through the built-in button     |
+| Viewer prop / API                    | Purpose                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `highlightedNodeIds`                 | Additional emphasized nodes                                                                     |
+| `filters` / `useFilteredGraph`       | Pure induced-graph filtering                                                                    |
+| `layout="layered"` or function       | Deterministic automatic or custom layout                                                        |
+| `nodeRenderers`                      | Per-type custom geometry                                                                        |
+| `edgeStyle(edge)`                    | Custom color, width and dash overrides                                                          |
+| `showEdgeLabels`                     | All relationship labels; incident labels show on selection by default                           |
+| `showDetailsPanel` / `renderDetails` | Hide or replace the inspector                                                                   |
+| `className`, `style`, `ariaLabel`    | Host styling and accessible naming                                                              |
+| `ref.resetCamera()`                  | Fit the visible graph, also available through the built-in button                               |
+| `ref.captureScreenshot(options?)`    | PNG Blob of the current view with built-in labels; `includeLabels: false` exports geometry only |
+| `showScreenshotButton`               | Show the built-in Download PNG button (default true)                                            |
 
 Filtering prunes the scene; details use the original graph to preserve architectural context. Filtered-out relationships are shown but cannot be selected until the host changes its filters. A selection hidden by filtering is visually cleared without firing a synthetic callback; it reappears if made visible again. This preserves externally controlled selection.
 
