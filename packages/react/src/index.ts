@@ -17,6 +17,7 @@ export type {
   ArchitectureViewerProps,
   ArchitectureViewerHandle,
   ScreenshotOptions,
+  NodePositions,
   NodeRendererProps,
   NodeRendererRegistry,
   EdgeStyle,

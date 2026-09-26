@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { Html, OrbitControls } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { Box3, PerspectiveCamera, Vector3 } from 'three';
 import type { ComponentRef } from 'react';
 import type { ArchitectureGraph, ArchitectureNode } from 'archgraph-core';
 import { getNeighbors } from 'archgraph-core';
-import type { LayoutResult } from './layout.js';
+import type { LayoutResult, Position3 } from './layout.js';
 import type { ArchitectureViewerProps } from './types.js';
-import { DefaultNodeRenderer, getNodeColor } from './Node.js';
+import { InteractiveNode } from './InteractiveNode.js';
 import { GraphEdge } from './Edge.js';
 import { captureViewport } from './screenshot.js';
 import type { ArchitectureViewerHandle } from './types.js';
@@ -38,14 +38,20 @@ function CaptureBridge({
 }
 function CameraRig({
   positions,
+  layoutPositions,
   reset,
 }: {
   positions: LayoutResult;
+  layoutPositions: LayoutResult;
   reset: number;
 }) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const { camera, size, invalidate } = useThree();
+  const latestPositions = useRef(positions);
+  latestPositions.current = positions;
+  const framingKey = JSON.stringify([...layoutPositions]);
   useEffect(() => {
+    const positions = latestPositions.current;
     const box = new Box3();
     for (const position of positions.values())
       box.expandByPoint(new Vector3(...position));
@@ -82,7 +88,7 @@ function CameraRig({
       controls.current.update();
     }
     invalidate();
-  }, [positions, reset, camera, size.width, size.height, invalidate]);
+  }, [framingKey, reset, camera, size.width, size.height, invalidate]);
   return (
     <OrbitControls
       ref={controls}
@@ -99,6 +105,10 @@ export interface GraphSceneProps {
   ) => void;
   graph: ArchitectureGraph;
   positions: LayoutResult;
+  layoutPositions: LayoutResult;
+  draggableNodes: boolean;
+  onNodeMove: (node: ArchitectureNode, position: Position3) => void;
+  onNodeDragEnd?: ArchitectureViewerProps['onNodeDragEnd'];
   selectedId: string | null;
   onSelect: (node: ArchitectureNode | null) => void;
   reset: number;
@@ -118,7 +128,12 @@ function SupportedScene({
   edgeStyle,
   showEdgeLabels,
   onCaptureReady,
+  layoutPositions,
+  draggableNodes,
+  onNodeMove,
+  onNodeDragEnd,
 }: GraphSceneProps) {
+  const dragLock = useRef(false);
   const connected = useMemo(
     () =>
       new Set(
@@ -157,7 +172,11 @@ function SupportedScene({
       <color attach="background" args={['#f3f5f7']} />
       <ambientLight intensity={1.5} />
       <directionalLight position={[8, 15, 10]} intensity={2} />
-      <CameraRig positions={positions} reset={reset} />
+      <CameraRig
+        positions={positions}
+        layoutPositions={layoutPositions}
+        reset={reset}
+      />
       <CaptureBridge onCaptureReady={onCaptureReady} />
       <gridHelper
         args={[100, 50, '#dce1e7', '#e8ecf0']}
@@ -189,62 +208,22 @@ function SupportedScene({
         const selected = node.id === selectedId;
         const dimmed =
           !!selectedId && !connected.has(node.id) && !highlighted.has(node.id);
-        const Renderer =
-          nodeRenderers && Object.hasOwn(nodeRenderers, node.type)
-            ? nodeRenderers[node.type]!
-            : DefaultNodeRenderer;
         return (
-          <group
+          <InteractiveNode
             key={node.id}
-            position={positions.get(node.id)}
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect(node);
-            }}
-          >
-            <Renderer
-              node={node}
-              selected={selected}
-              highlighted={highlighted.has(node.id)}
-              dimmed={dimmed}
-              color={node.visual?.color ?? getNodeColor(node.type)}
-              opacity={dimmed ? 0.28 : 1}
-            />
-            {selected && (
-              <mesh
-                rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, -0.6, 0]}
-                raycast={() => null}
-              >
-                <ringGeometry args={[0.8, 0.88, 40]} />
-                <meshBasicMaterial color="#335b93" />
-              </mesh>
-            )}
-            <Html
-              position={[0, -(node.visual?.size ?? 1) * 0.5 - 0.35, 0]}
-              center
-              zIndexRange={[30, 0]}
-            >
-              <button
-                type="button"
-                data-av-export-label="node"
-                data-node-id={node.id}
-                className={`av-node-label${selected ? ' av-node-label-selected' : ''}`}
-                style={{ opacity: dimmed ? 0.45 : 1 }}
-                aria-pressed={selected}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onSelect(node);
-                }}
-              >
-                <strong>{node.label}</strong>
-                <span>
-                  {node.group ? groupNames.get(node.group) : node.type}
-                </span>
-              </button>
-            </Html>
-          </group>
+            node={node}
+            position={positions.get(node.id)!}
+            selected={selected}
+            dimmed={dimmed}
+            highlighted={highlighted.has(node.id)}
+            groupLabel={node.group ? groupNames.get(node.group) : undefined}
+            nodeRenderers={nodeRenderers}
+            draggable={draggableNodes}
+            dragLock={dragLock}
+            onSelect={() => onSelect(node)}
+            onMove={(position) => onNodeMove(node, position)}
+            onDragEnd={(position) => onNodeDragEnd?.(node, position)}
+          />
         );
       })}
     </Canvas>

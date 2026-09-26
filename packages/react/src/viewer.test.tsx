@@ -14,11 +14,19 @@ import type { ArchitectureGraph } from 'archgraph-core';
 import type { GraphSceneProps } from './Scene.js';
 import type { ArchitectureViewerHandle } from './types.js';
 vi.mock('./Scene.js', () => ({
-  GraphScene: ({ graph, onSelect, selectedId, reset }: GraphSceneProps) => (
+  GraphScene: ({
+    graph,
+    onSelect,
+    selectedId,
+    reset,
+    positions,
+    onNodeMove,
+  }: GraphSceneProps) => (
     <div
       data-testid="scene"
       data-selected={selectedId ?? ''}
       data-reset={reset}
+      data-positions={JSON.stringify(Object.fromEntries(positions))}
     >
       {graph.nodes.map((node) => (
         <button key={node.id} onClick={() => onSelect(node)}>
@@ -26,6 +34,9 @@ vi.mock('./Scene.js', () => ({
         </button>
       ))}
       <button onClick={() => onSelect(null)}>empty space</button>
+      <button onClick={() => onNodeMove(graph.nodes[0]!, [7, 0, 8])}>
+        move first
+      </button>
     </div>
   ),
 }));
@@ -178,5 +189,87 @@ describe('viewer behavior without WebGL', () => {
     );
     expect(screen.getByRole('alert')).toHaveTextContent('Unknown edge target');
     expect(screen.queryByTestId('scene')).not.toBeInTheDocument();
+  });
+});
+
+describe('manual positions', () => {
+  const positions = () =>
+    JSON.parse(screen.getByTestId('scene').getAttribute('data-positions')!);
+  it('retains uncontrolled positions through selection, filters and camera reset, then resets layout', () => {
+    const original = JSON.stringify(graph);
+    const ref = createRef<ArchitectureViewerHandle>();
+    const changed = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        draggableNodes
+        onNodePositionsChange={changed}
+      />,
+    );
+    const automatic = positions();
+    fireEvent.click(screen.getByText('move first'));
+    expect(positions().a).toEqual([7, 0, 8]);
+    expect(changed).toHaveBeenLastCalledWith({ a: [7, 0, 8] });
+    fireEvent.click(screen.getByText('scene:b'));
+    act(() => ref.current?.resetCamera());
+    expect(positions().a).toEqual([7, 0, 8]);
+    rerender(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        draggableNodes
+        filters={{ types: ['service'] }}
+      />,
+    );
+    expect(positions().a).toBeUndefined();
+    rerender(<ArchitectureViewer ref={ref} graph={graph} draggableNodes />);
+    expect(positions().a).toEqual([7, 0, 8]);
+    fireEvent.click(screen.getByRole('button', { name: 'Reset layout' }));
+    expect(positions()).toEqual(automatic);
+    expect(JSON.stringify(graph)).toBe(original);
+  });
+  it('honors controlled positions until the consumer accepts a proposal', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    const changed = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        nodePositions={{ a: [1, 2, 3] }}
+        onNodePositionsChange={changed}
+      />,
+    );
+    fireEvent.click(screen.getByText('move first'));
+    expect(positions().a).toEqual([1, 2, 3]);
+    expect(changed).toHaveBeenLastCalledWith({ a: [7, 0, 8] });
+    rerender(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        nodePositions={{ a: [7, 0, 8] }}
+        onNodePositionsChange={changed}
+      />,
+    );
+    expect(positions().a).toEqual([7, 0, 8]);
+    act(() => ref.current?.resetLayout());
+    expect(changed).toHaveBeenLastCalledWith({});
+    expect(positions().a).toEqual([7, 0, 8]);
+  });
+  it('forgets overrides for removed nodes without forgetting filtered nodes', () => {
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={graph}
+        defaultNodePositions={{ a: [9, 0, 9] }}
+      />,
+    );
+    expect(positions().a).toEqual([9, 0, 9]);
+    rerender(
+      <ArchitectureViewer
+        graph={{ ...graph, nodes: [graph.nodes[1]!], edges: [] }}
+      />,
+    );
+    rerender(<ArchitectureViewer graph={graph} />);
+    expect(positions().a).not.toEqual([9, 0, 9]);
   });
 });
