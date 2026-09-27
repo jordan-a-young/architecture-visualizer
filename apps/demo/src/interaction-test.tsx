@@ -31,6 +31,18 @@ const walkthroughGraph: ArchitectureGraph = {
     { id: 'bb', source: 'b', target: 'b', type: 'loops' },
   ],
 };
+const groupedGraph: ArchitectureGraph = {
+  ...walkthroughGraph,
+  groups: [
+    { id: 'domain', label: 'Domain' },
+    { id: 'services', label: 'Services', parent: 'domain' },
+  ],
+  nodes: graph.nodes.map((node) => ({
+    ...node,
+    group:
+      node.id === 'a' ? 'services' : node.id === 'b' ? 'domain' : undefined,
+  })),
+};
 function Custom({ color, opacity }: NodeRendererProps) {
   return (
     <mesh>
@@ -45,6 +57,7 @@ function Fixture() {
   const [viewDump, setViewDump] = useState('');
   const [walkthrough, setWalkthrough] = useState<WalkthroughState | null>(null);
   const [filtered, setFiltered] = useState(false);
+  const [collapsed, setCollapsed] = useState<readonly string[]>([]);
   const [positions, setPositions] = useState<NodePositions>({});
   const [dragEnds, setDragEnds] = useState(0);
   const [enabled, setEnabled] = useState(true);
@@ -96,10 +109,16 @@ function Fixture() {
         <ArchitectureViewer
           ref={viewer}
           graph={
-            new URLSearchParams(location.search).has('walkthrough')
-              ? walkthroughGraph
-              : graph
+            new URLSearchParams(location.search).has('groups')
+              ? groupedGraph
+              : new URLSearchParams(location.search).has('walkthrough')
+                ? walkthroughGraph
+                : graph
           }
+          collapsedGroupIds={controlled ? collapsed : undefined}
+          onCollapsedGroupsChange={(ids) => {
+            if (accept) setCollapsed(ids);
+          }}
           walkthrough={controlled ? walkthrough : undefined}
           onWalkthroughChange={(state) => {
             if (accept) setWalkthrough(state);
