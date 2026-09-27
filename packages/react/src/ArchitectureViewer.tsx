@@ -18,6 +18,9 @@ import type {
 import { computeLayout } from './layout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
+import { Walkthrough } from './Walkthrough.js';
+import { resolveWalkthrough } from './walkthrough.js';
+import type { WalkthroughState } from './types.js';
 import { getEdgeKey } from './edgeKey.js';
 import { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
 import { DefaultDetailsPanel } from './DetailsPanel.js';
@@ -62,6 +65,10 @@ const ValidViewer = forwardRef<
     onEdgeSelect,
     highlightedEdgeKeys = [],
     showSearch = true,
+    showWalkthrough = true,
+    walkthrough,
+    defaultWalkthrough,
+    onWalkthroughChange,
     renderEdgeDetails,
     filters,
     layout = 'layered',
@@ -87,6 +94,20 @@ const ValidViewer = forwardRef<
   );
   const [reset, setReset] = useState(0);
   const [query, setQuery] = useState('');
+  const [internalWalkthrough, setInternalWalkthrough] =
+    useState<WalkthroughState | null>(defaultWalkthrough ?? null);
+  const path = useMemo(
+    () =>
+      resolveWalkthrough(
+        graph,
+        walkthrough === undefined ? internalWalkthrough : walkthrough,
+      ),
+    [graph, walkthrough, internalWalkthrough],
+  );
+  const changeWalkthrough = (state: WalkthroughState | null) => {
+    if (walkthrough === undefined) setInternalWalkthrough(state);
+    onWalkthroughChange?.(state);
+  };
   const [internalEdgeKey, setInternalEdgeKey] = useState<string | null>(
     defaultSelectedEdgeKey ?? null,
   );
@@ -176,16 +197,20 @@ const ValidViewer = forwardRef<
   };
   const resetLayout = useCallback(() => changePositions({}), [changePositions]);
   const candidate = selectedNodeId === undefined ? internalId : selectedNodeId;
-  const selected = candidate ? (getNode(visible, candidate) ?? null) : null;
+  const inspectedId = path?.currentNodeId ?? candidate;
+  const selected = inspectedId ? (getNode(visible, inspectedId) ?? null) : null;
   const edgeCandidate =
     selectedEdgeKey === undefined ? internalEdgeKey : selectedEdgeKey;
-  const selectedEdge =
-    visible.edges.find((edge) => edgeKeys.get(edge) === edgeCandidate) ?? null;
+  const selectedEdge = path
+    ? null
+    : (visible.edges.find((edge) => edgeKeys.get(edge) === edgeCandidate) ??
+      null);
   const selectEdge = (edge: ArchitectureEdge | null) => {
     const key = edge ? edgeKeys.get(edge)! : null;
     if (selectedEdgeKey === undefined) setInternalEdgeKey(key);
     onEdgeSelect?.(edge, key);
     if (edge) {
+      changeWalkthrough(null);
       if (selectedNodeId === undefined) setInternalId(null);
       onNodeSelect?.(null);
     }
@@ -215,6 +240,7 @@ const ValidViewer = forwardRef<
         .includes(normalizedQuery),
   );
   const select = (node: ArchitectureNode | null) => {
+    if (path) changeWalkthrough(null);
     selectEdge(null);
     if (selectedNodeId === undefined) setInternalId(node?.id ?? null);
     onNodeSelect?.(node);
@@ -253,7 +279,11 @@ const ValidViewer = forwardRef<
             edgeKeys={edgeKeys}
             selectedEdgeKey={selectedEdge ? edgeCandidate : null}
             onEdgeSelect={selectEdge}
-            highlightedEdgeKeys={highlightedEdgeKeys}
+            highlightedEdgeKeys={[
+              ...highlightedEdgeKeys,
+              ...(path?.state.edgeKeys ?? []),
+            ]}
+            pathActive={!!path}
             positions={positions}
             layoutPositions={layoutPositions}
             draggableNodes={draggableNodes}
@@ -262,7 +292,10 @@ const ValidViewer = forwardRef<
             selectedId={selected?.id ?? null}
             onSelect={select}
             reset={reset}
-            highlightedNodeIds={highlightedNodeIds}
+            highlightedNodeIds={[
+              ...highlightedNodeIds,
+              ...(path?.nodeIds ?? []),
+            ]}
             nodeRenderers={nodeRenderers}
             edgeStyle={edgeStyle}
             showEdgeLabels={showEdgeLabels}
@@ -278,6 +311,17 @@ const ValidViewer = forwardRef<
             {visible.nodes.length} nodes · {visible.edges.length} relationships
           </span>
           <div className="av-toolbar-actions">
+            {showWalkthrough && selected && !path && (
+              <button
+                type="button"
+                onClick={() => {
+                  selectEdge(null);
+                  changeWalkthrough({ startNodeId: selected.id, edgeKeys: [] });
+                }}
+              >
+                Start walkthrough
+              </button>
+            )}
             {selected && (
               <button type="button" onClick={() => focusNode(selected.id)}>
                 Focus node
@@ -349,6 +393,14 @@ const ValidViewer = forwardRef<
             ))}
           </details>
         </details>
+        {showWalkthrough && path && (
+          <Walkthrough
+            graph={graph}
+            path={path}
+            visibleIds={new Set(visible.nodes.map((node) => node.id))}
+            onChange={changeWalkthrough}
+          />
+        )}
         <p className="av-controls-hint">
           {draggableNodes
             ? 'Drag nodes to move · Drag background to orbit · Right-drag to pan · Scroll to zoom · Esc to cancel/clear'
