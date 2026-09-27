@@ -77,7 +77,7 @@ export const walkthrough: WalkthroughState = { startNodeId: 'a', edgeKeys: [] };
 const positions: NodePositions = { a: [1, 0, 2] };
 export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
 if (!validateGraph(graph).valid) throw new Error('Unexpected invalid fixture');
-createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} nodeRenderers={{ custom: Custom }} draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
+createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} collapsedGroupIds={[]} onCollapsedGroupsChange={ids => { void ids; }} nodeRenderers={{ custom: Custom }} draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
 `,
   );
   const run = (args) =>
