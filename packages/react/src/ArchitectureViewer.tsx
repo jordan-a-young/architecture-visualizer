@@ -578,6 +578,7 @@ const ValidViewer = forwardRef<
             renderEdgeDetails({
               graph,
               edge: selectedEdge,
+              visibleNodeIds: detailsProps.visibleNodeIds,
               onClear: () => selectEdge(null),
               onNodeSelect: select,
             })
@@ -585,6 +586,7 @@ const ValidViewer = forwardRef<
             <DefaultEdgeDetailsPanel
               graph={graph}
               edge={selectedEdge}
+              visibleNodeIds={detailsProps.visibleNodeIds}
               onClear={() => selectEdge(null)}
               onNodeSelect={select}
             />

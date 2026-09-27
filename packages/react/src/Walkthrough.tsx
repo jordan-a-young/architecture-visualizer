@@ -96,7 +96,7 @@ export function Walkthrough({
         !outgoing.some(({ edge }) => visibleIds.has(edge.target)) && (
           <p role="status">Next steps are hidden by the view.</p>
         )}
-      {choosingFor === signature && (
+      {currentVisible && choosingFor === signature && (
         <div
           className="av-walk-choices"
           role="group"

@@ -315,7 +315,8 @@
   }
 }
 
-.av-relationship button:disabled {
+.av-relationship button:disabled,
+.av-details button:disabled {
   color: #8793a2;
   cursor: default;
 }

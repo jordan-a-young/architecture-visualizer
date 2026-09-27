@@ -33,6 +33,8 @@ export interface DetailsPanelProps {
 export interface EdgeDetailsPanelProps {
   graph: ArchitectureGraph;
   edge: ArchitectureEdge;
+  /** Endpoints hidden by filters or collapsed groups cannot be selected. */
+  visibleNodeIds?: readonly string[];
   onClear: () => void;
   onNodeSelect: (node: ArchitectureNode | null) => void;
 }
