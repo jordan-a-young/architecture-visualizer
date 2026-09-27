@@ -150,6 +150,7 @@ export interface GraphSceneProps {
     capture: ArchitectureViewerHandle['captureScreenshot'] | null,
   ) => void;
   graph: ArchitectureGraph;
+  groupSummaries?: ReadonlyMap<string, string>;
   onCameraReady?: (reader: (() => CameraState) | null) => void;
   cameraRequest?: { state: CameraState; token: number } | null;
   focusRequest?: { id: string; token: number } | null;
@@ -173,6 +174,7 @@ export interface GraphSceneProps {
 }
 function SupportedScene({
   graph,
+  groupSummaries,
   positions,
   selectedId,
   onSelect,
@@ -297,9 +299,14 @@ function SupportedScene({
             selected={selected}
             dimmed={dimmed}
             highlighted={highlighted.has(node.id)}
-            groupLabel={node.group ? groupNames.get(node.group) : undefined}
-            nodeRenderers={nodeRenderers}
-            draggable={draggableNodes}
+            groupLabel={
+              groupSummaries?.get(node.id) ??
+              (node.group ? groupNames.get(node.group) : undefined)
+            }
+            nodeRenderers={
+              groupSummaries?.has(node.id) ? undefined : nodeRenderers
+            }
+            draggable={draggableNodes && !groupSummaries?.has(node.id)}
             dragLock={dragLock}
             onSelect={() => onSelect(node)}
             onMove={(position) => onNodeMove(node, position)}

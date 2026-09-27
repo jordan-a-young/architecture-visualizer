@@ -230,7 +230,7 @@ ESM and TypeScript declarations are exported; no CommonJS build is claimed. CSS 
 
 ## V1 limits and next steps
 
-This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. Layout is simple and not crossing-minimized; dense graphs can overlap labels. Benchmark larger graphs before setting scale guarantees. Edge selection, saved/controlled camera state, collapsible groups and nested group boundaries remain future additive APIs. Consider SCC-aware layout, virtualized labels and an edge inspector next. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
+This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. Layout is simple and not crossing-minimized; dense graphs can overlap labels. Benchmark larger graphs before setting scale guarantees. Nested group enclosures, SCC-aware layout, and virtualized labels remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
 
 ## License
 
@@ -245,3 +245,7 @@ Select a node and start a **Connection walkthrough** to explore outgoing relatio
 ## Saved views
 
 The demo can save named views in the current browser, restore them after reload, or delete them. Views include camera, manual positions, filters, selection, and walkthrough state. Applications can use `ref.getViewState()`, `ref.restoreViewState()`, and `parseViewState()` with their own storage. Persistence stays outside the library. See the [saved-view contract and limitations](packages/react/README.md#saved-view-state).
+
+## Collapsible groups
+
+Open Browse nodes → Groups to collapse a group into a labeled summary. Nested groups retain their own state, and boundary edges still inspect the original relationship. Expand by clicking a summary or using the list. Manual positions survive collapse/expand, and saved views include collapsed groups. No group meaning or provider semantics are assumed. See the React guide for controlled state and filtering behavior.

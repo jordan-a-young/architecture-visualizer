@@ -80,3 +80,22 @@ Persistence belongs to the consuming application. The package does not read or w
 Filters now support `defaultFilters` and `onFiltersChange` as well as controlled `filters`. Restoring proposes updates for controlled filters, positions, node/edge selection, and walkthrough; the host must apply their callbacks. Uncontrolled fields update internally. Camera restoration is imperative. A snapshot is not a transaction across host callbacks: hosts should apply their proposals together. Invalid snapshots change nothing.
 
 Predicate filters cannot be serialized: capture rejects them with a clear error instead of dropping their meaning. Custom layout functions/renderers, graph data, transient highlighting, search text, and label visibility are not saved; supply the same graph and layout when restoring. Missing node/edge references and removed position overrides are discarded; walkthroughs retain their valid prefix. Camera tuples must be finite, with at least 3 units between position and target. Use explicit edge IDs for saved edge selection and paths across graph reorder.
+
+## Collapsible groups
+
+Use Browse nodes → Groups or provide `collapsedGroupIds`, `defaultCollapsedGroupIds`, and `onCollapsedGroupsChange`. Controlled hosts must accept proposed changes, including expansion clicks and saved-view restoration.
+
+```tsx
+const [collapsed, setCollapsed] = useState<readonly string[]>([]);
+<ArchitectureViewer
+  graph={graph}
+  collapsedGroupIds={collapsed}
+  onCollapsedGroupsChange={setCollapsed}
+/>;
+```
+
+Collapse projects visible group members into a neutral summary at their average position. The outermost collapsed ancestor wins; expanding a parent preserves a collapsed child's state. Empty/fully filtered groups produce no summary. Counts reflect members remaining after filtering. Cross-boundary edges retain individual identities, direction, style and original inspector data; internal relationships are hidden from the scene. Parallel relationships remain separate.
+
+Summary clicks expand the group without selecting a synthetic architecture node. Summaries use built-in geometry and cannot be dragged. Original manual positions and selection survive collapse/expand. Hidden nodes cannot be focused or visited by Next until their group expands. Hiding the current step also hides any pending branch choices. The edge inspector disables hidden endpoints until their groups expand; custom edge panels receive `visibleNodeIds` to apply the same rule. The graph schema, node renderer callbacks, edge callbacks and custom details panels continue to use original architecture data. There are no provider-specific grouping rules or automatic discovery.
+
+Saved views include `collapsedGroupIds`; older version-1 snapshots without this field restore with all groups expanded. The library performs no persistence or network requests.

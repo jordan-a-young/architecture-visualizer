@@ -33,6 +33,8 @@ export interface DetailsPanelProps {
 export interface EdgeDetailsPanelProps {
   graph: ArchitectureGraph;
   edge: ArchitectureEdge;
+  /** Endpoints hidden by filters or collapsed groups cannot be selected. */
+  visibleNodeIds?: readonly string[];
   onClear: () => void;
   onNodeSelect: (node: ArchitectureNode | null) => void;
 }
@@ -63,6 +65,10 @@ export interface ArchitectureViewerProps {
   filters?: GraphFilterOptions;
   defaultFilters?: GraphFilterOptions;
   onFiltersChange?: (filters: GraphFilterOptions) => void;
+  /** Scene-only collapse; nested children retain their state when a parent expands. */
+  collapsedGroupIds?: readonly string[];
+  defaultCollapsedGroupIds?: readonly string[];
+  onCollapsedGroupsChange?: (ids: readonly string[]) => void;
   layout?: Layout;
   /** Opt in to moving nodes on the horizontal plane at their current height. */
   draggableNodes?: boolean;

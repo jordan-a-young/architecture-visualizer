@@ -15,6 +15,7 @@ import type {
   ArchitectureNode,
   ArchitectureEdge,
 } from 'archgraph-core';
+import { projectGroups } from './groups.js';
 import { computeLayout } from './layout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
@@ -76,6 +77,9 @@ const ValidViewer = forwardRef<
     filters,
     defaultFilters = {},
     onFiltersChange,
+    collapsedGroupIds,
+    defaultCollapsedGroupIds = [],
+    onCollapsedGroupsChange,
     layout = 'layered',
     draggableNodes = false,
     nodePositions,
@@ -173,7 +177,20 @@ const ValidViewer = forwardRef<
       setCapturing(false);
     }
   };
-  const visible = useFilteredGraph(graph, effectiveFilters);
+  const filtered = useFilteredGraph(graph, effectiveFilters);
+  const [internalCollapsed, setInternalCollapsed] = useState<readonly string[]>(
+    defaultCollapsedGroupIds,
+  );
+  const collapsed = collapsedGroupIds ?? internalCollapsed;
+  const changeCollapsed = (ids: readonly string[]) => {
+    const next = [...new Set(ids)].filter((id) =>
+      graph.groups.some((group) => group.id === id),
+    );
+    if (collapsedGroupIds === undefined) setInternalCollapsed(next);
+    onCollapsedGroupsChange?.(next);
+  };
+  const expandGroup = (id: string) =>
+    changeCollapsed(collapsed.filter((groupId) => groupId !== id));
   const [internalPositions, setInternalPositions] = useState<NodePositions>(
     () => retainNodePositions(graph, defaultNodePositions),
   );
@@ -192,13 +209,31 @@ const ValidViewer = forwardRef<
   const layoutPositions = useMemo(
     () =>
       new Map(
-        visible.nodes.map((node) => [node.id, basePositions.get(node.id)!]),
+        filtered.nodes.map((node) => [node.id, basePositions.get(node.id)!]),
       ),
-    [visible, basePositions],
+    [filtered, basePositions],
   );
-  const positions = useMemo(
+  const individualPositions = useMemo(
     () => resolveNodePositions(layoutPositions, overrides),
     [layoutPositions, overrides],
+  );
+  const projection = useMemo(
+    () =>
+      projectGroups(
+        filtered,
+        collapsed,
+        individualPositions,
+        graph.nodes.map((node) => node.id),
+      ),
+    [filtered, collapsed, individualPositions, graph],
+  );
+  const visible = projection.graph;
+  const positions = projection.positions;
+  const sceneEdgeKeys = new Map(
+    visible.edges.map((edge) => [
+      edge,
+      edgeKeys.get(projection.originals.get(edge)!)!,
+    ]),
   );
   const changePositions = useCallback(
     (next: NodePositions) => {
@@ -219,9 +254,10 @@ const ValidViewer = forwardRef<
     selectedEdgeKey === undefined ? internalEdgeKey : selectedEdgeKey;
   const selectedEdge = path
     ? null
-    : (visible.edges.find((edge) => edgeKeys.get(edge) === edgeCandidate) ??
+    : (filtered.edges.find((edge) => edgeKeys.get(edge) === edgeCandidate) ??
       null);
   const selectEdge = (edge: ArchitectureEdge | null) => {
+    edge = edge ? (projection.originals.get(edge) ?? edge) : null;
     const key = edge ? edgeKeys.get(edge)! : null;
     if (selectedEdgeKey === undefined) setInternalEdgeKey(key);
     onEdgeSelect?.(edge, key);
@@ -257,6 +293,11 @@ const ValidViewer = forwardRef<
         .includes(normalizedQuery),
   );
   const select = (node: ArchitectureNode | null) => {
+    const group = node ? projection.proxies.get(node.id) : undefined;
+    if (group) {
+      expandGroup(group.id);
+      return;
+    }
     if (path) changeWalkthrough(null);
     selectEdge(null);
     if (selectedNodeId === undefined) setInternalId(node?.id ?? null);
@@ -269,6 +310,9 @@ const ValidViewer = forwardRef<
       );
     return parseViewState({
       version: 1,
+      collapsedGroupIds: collapsed.filter((id) =>
+        graph.groups.some((group) => group.id === id),
+      ),
       camera: cameraReader.current?.() ?? null,
       nodePositions: overrides,
       filters: Object.fromEntries(
@@ -292,6 +336,7 @@ const ValidViewer = forwardRef<
     if (filters === undefined) setInternalFilters(state.filters);
     onFiltersChange?.(state.filters);
     changePositions(retained);
+    changeCollapsed(state.collapsedGroupIds);
     const node = state.selectedNodeId
       ? (getNode(graph, state.selectedNodeId) ?? null)
       : null;
@@ -345,7 +390,15 @@ const ValidViewer = forwardRef<
             focusRequest={focusRequest}
             onCameraReady={onCameraReady}
             cameraRequest={cameraRequest}
-            edgeKeys={edgeKeys}
+            edgeKeys={sceneEdgeKeys}
+            groupSummaries={
+              new Map(
+                [...projection.proxies].map(([id, group]) => [
+                  id,
+                  `${projection.members.get(group.id)!.length} nodes · Click to expand`,
+                ]),
+              )
+            }
             selectedEdgeKey={selectedEdge ? edgeCandidate : null}
             onEdgeSelect={selectEdge}
             highlightedEdgeKeys={[
@@ -366,7 +419,11 @@ const ValidViewer = forwardRef<
               ...(path?.nodeIds ?? []),
             ]}
             nodeRenderers={nodeRenderers}
-            edgeStyle={edgeStyle}
+            edgeStyle={
+              edgeStyle
+                ? (edge) => edgeStyle(projection.originals.get(edge) ?? edge)
+                : undefined
+            }
             showEdgeLabels={showEdgeLabels}
           />
         </SceneBoundary>
@@ -422,6 +479,37 @@ const ValidViewer = forwardRef<
         )}
         <details className="av-node-list">
           <summary>Browse nodes ({visible.nodes.length})</summary>
+          {!!graph.groups.length && (
+            <details className="av-group-list">
+              <summary>Groups ({graph.groups.length})</summary>
+              {graph.groups.map((group) => (
+                <button
+                  type="button"
+                  key={group.id}
+                  aria-expanded={!collapsed.includes(group.id)}
+                  onClick={() =>
+                    collapsed.includes(group.id)
+                      ? expandGroup(group.id)
+                      : changeCollapsed([...collapsed, group.id])
+                  }
+                >
+                  {collapsed.includes(group.id) ? 'Expand' : 'Collapse'}{' '}
+                  {group.label}
+                  {group.parent && (
+                    <small>
+                      {' '}
+                      ·{' '}
+                      {
+                        graph.groups.find(
+                          (parent) => parent.id === group.parent,
+                        )?.label
+                      }
+                    </small>
+                  )}
+                </button>
+              ))}
+            </details>
+          )}
           <div>
             {showSearch && (
               <input
@@ -442,7 +530,9 @@ const ValidViewer = forwardRef<
                 aria-pressed={node.id === selected?.id}
                 onClick={() => select(node)}
               >
-                {node.label}
+                {projection.proxies.has(node.id)
+                  ? `Expand ${node.label}`
+                  : node.label}
               </button>
             ))}
           </div>
@@ -451,12 +541,12 @@ const ValidViewer = forwardRef<
             {visible.edges.map((edge) => (
               <button
                 type="button"
-                key={edgeKeys.get(edge)}
-                aria-pressed={selectedEdge === edge}
+                key={sceneEdgeKeys.get(edge)}
+                aria-pressed={selectedEdge === projection.originals.get(edge)}
                 onClick={() => selectEdge(edge)}
               >
-                {getNode(graph, edge.source)?.label} →{' '}
-                {getNode(graph, edge.target)?.label} ·{' '}
+                {getNode(visible, edge.source)?.label} →{' '}
+                {getNode(visible, edge.target)?.label} ·{' '}
                 {edge.label ?? edge.type ?? 'relationship'}
               </button>
             ))}
@@ -466,7 +556,13 @@ const ValidViewer = forwardRef<
           <Walkthrough
             graph={graph}
             path={path}
-            visibleIds={new Set(visible.nodes.map((node) => node.id))}
+            visibleIds={
+              new Set(
+                visible.nodes
+                  .filter((node) => !projection.proxies.has(node.id))
+                  .map((node) => node.id),
+              )
+            }
             onChange={changeWalkthrough}
           />
         )}
@@ -482,6 +578,7 @@ const ValidViewer = forwardRef<
             renderEdgeDetails({
               graph,
               edge: selectedEdge,
+              visibleNodeIds: detailsProps.visibleNodeIds,
               onClear: () => selectEdge(null),
               onNodeSelect: select,
             })
@@ -489,6 +586,7 @@ const ValidViewer = forwardRef<
             <DefaultEdgeDetailsPanel
               graph={graph}
               edge={selectedEdge}
+              visibleNodeIds={detailsProps.visibleNodeIds}
               onClear={() => selectEdge(null)}
               onNodeSelect={select}
             />

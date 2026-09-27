@@ -315,7 +315,8 @@
   }
 }
 
-.av-relationship button:disabled {
+.av-relationship button:disabled,
+.av-details button:disabled {
   color: #8793a2;
   cursor: default;
 }
@@ -429,4 +430,12 @@
     left: 12px;
     right: 12px;
   }
+}
+
+.av-group-list {
+  border-bottom: 1px solid #e0e6ed;
+  padding: 6px 0;
+}
+.av-group-list small {
+  color: #78899e;
 }

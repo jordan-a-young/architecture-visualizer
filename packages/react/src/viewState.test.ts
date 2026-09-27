@@ -13,7 +13,10 @@ it('parses saved JSON into detached data without prototype-sensitive writes', ()
   const parsed = parseViewState(view);
   parsed.nodePositions.a![0] = 9;
   expect(view.nodePositions.a).toEqual([1, 0, 2]);
-  expect(parseViewState(JSON.parse(JSON.stringify(view)))).toEqual(view);
+  expect(parseViewState(JSON.parse(JSON.stringify(view)))).toEqual({
+    ...view,
+    collapsedGroupIds: [],
+  });
   const special = parseViewState({
     ...view,
     nodePositions: JSON.parse('{"__proto__":[1,2,3]}'),

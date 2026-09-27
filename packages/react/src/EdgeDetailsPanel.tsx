@@ -6,6 +6,7 @@ export function DefaultEdgeDetailsPanel({
   edge,
   onClear,
   onNodeSelect,
+  visibleNodeIds,
 }: EdgeDetailsPanelProps) {
   return (
     <aside className="av-details" aria-label="Relationship details">
@@ -26,6 +27,16 @@ export function DefaultEdgeDetailsPanel({
         <h3>Direction</h3>
         <button
           type="button"
+          disabled={
+            visibleNodeIds !== undefined &&
+            !visibleNodeIds.includes(edge.source)
+          }
+          title={
+            visibleNodeIds !== undefined &&
+            !visibleNodeIds.includes(edge.source)
+              ? 'Expand the group or adjust filters to select this node.'
+              : undefined
+          }
           onClick={() => onNodeSelect(getNode(graph, edge.source) ?? null)}
         >
           {getNode(graph, edge.source)?.label ?? edge.source}
@@ -33,6 +44,16 @@ export function DefaultEdgeDetailsPanel({
         <span aria-label="to"> → </span>
         <button
           type="button"
+          disabled={
+            visibleNodeIds !== undefined &&
+            !visibleNodeIds.includes(edge.target)
+          }
+          title={
+            visibleNodeIds !== undefined &&
+            !visibleNodeIds.includes(edge.target)
+              ? 'Expand the group or adjust filters to select this node.'
+              : undefined
+          }
           onClick={() => onNodeSelect(getNode(graph, edge.target) ?? null)}
         >
           {getNode(graph, edge.target)?.label ?? edge.target}
