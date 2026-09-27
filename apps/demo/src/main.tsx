@@ -68,11 +68,12 @@ function Demo() {
             Relationship labels
           </label>
         </div>
-        <span>Click any node to inspect</span>
+        <span>Click to inspect · Drag to rearrange</span>
       </div>
       <div className="viewer-shell">
         <ArchitectureViewer
           graph={graph}
+          draggableNodes
           selectedNodeId={selectedId}
           onNodeSelect={(node) => setSelectedId(node?.id ?? null)}
           filters={filters}

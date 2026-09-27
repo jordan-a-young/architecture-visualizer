@@ -30,3 +30,27 @@ const geometryOnly = await viewer.current!.captureScreenshot({
 ```
 
 `captureScreenshot(options?: ScreenshotOptions): Promise<Blob>` rejects if the scene is unavailable, unmounted, hidden, or PNG encoding fails. The built-in button reports errors without losing the inspector. Export includes custom WebGL node geometry. Built-in HTML label backgrounds, borders, text, colors and opacity are composited in their displayed positions; CSS shadows and arbitrary custom DOM overlays are not exported. No external assets or screenshot library are required.
+
+## Node dragging
+
+Enable `draggableNodes` to move nodes by dragging their geometry or label with a mouse, pen, or touch. Movement follows the horizontal world plane at the node's starting height. Connected edges follow immediately. A short click still selects; dragging does not navigate or change selection. Orbit controls pause during a drag and resume afterward. Escape, pointer cancellation, or losing focus rolls back the active gesture. Drag the background to orbit as before.
+
+```tsx
+import { useState } from 'react';
+import type { NodePositions } from 'archgraph-react';
+
+const [positions, setPositions] = useState<NodePositions>({});
+<ArchitectureViewer
+  graph={graph}
+  draggableNodes
+  nodePositions={positions}
+  onNodePositionsChange={setPositions}
+  onNodeDragEnd={(node, position) => console.log(node.id, position)}
+/>;
+```
+
+Omit `nodePositions` for internal state; `defaultNodePositions` supplies initial overrides. Positions are finite `[x, y, z]` tuples keyed by node ID, separate from `ArchitectureGraph`. Controlled consumers receive proposals and must update `nodePositions` to accept them. `onNodePositionsChange` fires during movement and cancellation rollback; `onNodeDragEnd` reports the final proposed position only after a completed drag. No callback writes to the graph or persists data externally.
+
+The automatic/custom layout runs on the full graph. Filtering only hides nodes, so existing coordinates and manual overrides survive filters. Overrides survive camera reset; removing a node discards its internal override. **Reset layout** and `ref.resetLayout()` clear overrides (proposing `{}` in controlled mode). **Reset camera** fits the currently visible, moved nodes. Moving nodes never automatically reframes the camera. Custom geometry inherits dragging from the viewer's wrapper unless it stops pointer propagation.
+
+Dragging defaults to off in the library and on in the demo. V1 supports one pointer and a horizontal plane, without collision avoidance, snapping, axis handles, or keyboard movement. Near-horizontal camera rays leave a node in place to avoid unstable intersections. The existing keyboard node list and selection remain available.

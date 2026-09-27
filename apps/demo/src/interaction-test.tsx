@@ -5,6 +5,7 @@ import { ArchitectureViewer } from 'archgraph-react';
 import type {
   ArchitectureViewerHandle,
   NodeRendererProps,
+  NodePositions,
 } from 'archgraph-react';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -31,6 +32,11 @@ function Fixture() {
   const viewer = useRef<ArchitectureViewerHandle>(null);
   const [error, setError] = useState('');
   const [filtered, setFiltered] = useState(false);
+  const [positions, setPositions] = useState<NodePositions>({});
+  const [dragEnds, setDragEnds] = useState(0);
+  const [enabled, setEnabled] = useState(true);
+  const controlled = new URLSearchParams(location.search).has('controlled');
+  const accept = !new URLSearchParams(location.search).has('reject');
   const exportScene = async () => {
     try {
       const blob = await viewer.current!.captureScreenshot({
@@ -50,11 +56,24 @@ function Fixture() {
     <>
       <button onClick={exportScene}>Export without labels</button>
       <button onClick={() => setFiltered(!filtered)}>Toggle filter</button>
+      <button onClick={() => setEnabled(!enabled)}>Toggle dragging</button>
       <output aria-label="Export error">{error}</output>
+      <output style={{ display: 'none' }} aria-label="Positions">
+        {JSON.stringify(positions)}
+      </output>
+      <output style={{ display: 'none' }} aria-label="Drag ends">
+        {dragEnds}
+      </output>
       <div style={{ height: 640, width: '100%' }}>
         <ArchitectureViewer
           ref={viewer}
           graph={graph}
+          draggableNodes={enabled}
+          nodePositions={controlled ? positions : undefined}
+          onNodePositionsChange={(next) => {
+            if (accept) setPositions(next);
+          }}
+          onNodeDragEnd={() => setDragEnds((count) => count + 1)}
           showEdgeLabels
           filters={filtered ? { types: ['custom', 'database'] } : undefined}
           nodeRenderers={{ custom: Custom }}

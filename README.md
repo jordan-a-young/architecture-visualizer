@@ -160,21 +160,27 @@ A single click selects without navigating. Selection emphasizes the node and inc
 
 The viewer validates graph input before mounting the scene. Invalid graphs show an error panel; consumers can call `validateGraph` to expose all warnings themselves. Replace graph/filter/layout references when changing data so memoized computations update.
 
-| Viewer prop / API                    | Purpose                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `highlightedNodeIds`                 | Additional emphasized nodes                                                                     |
-| `filters` / `useFilteredGraph`       | Pure induced-graph filtering                                                                    |
-| `layout="layered"` or function       | Deterministic automatic or custom layout                                                        |
-| `nodeRenderers`                      | Per-type custom geometry                                                                        |
-| `edgeStyle(edge)`                    | Custom color, width and dash overrides                                                          |
-| `showEdgeLabels`                     | All relationship labels; incident labels show on selection by default                           |
-| `showDetailsPanel` / `renderDetails` | Hide or replace the inspector                                                                   |
-| `className`, `style`, `ariaLabel`    | Host styling and accessible naming                                                              |
-| `ref.resetCamera()`                  | Fit the visible graph, also available through the built-in button                               |
-| `ref.captureScreenshot(options?)`    | PNG Blob of the current view with built-in labels; `includeLabels: false` exports geometry only |
-| `showScreenshotButton`               | Show the built-in Download PNG button (default true)                                            |
+| Viewer prop / API                         | Purpose                                                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `highlightedNodeIds`                      | Additional emphasized nodes                                                                     |
+| `filters` / `useFilteredGraph`            | Pure induced-graph filtering                                                                    |
+| `layout="layered"` or function            | Deterministic automatic or custom layout                                                        |
+| `nodeRenderers`                           | Per-type custom geometry                                                                        |
+| `edgeStyle(edge)`                         | Custom color, width and dash overrides                                                          |
+| `showEdgeLabels`                          | All relationship labels; incident labels show on selection by default                           |
+| `showDetailsPanel` / `renderDetails`      | Hide or replace the inspector                                                                   |
+| `className`, `style`, `ariaLabel`         | Host styling and accessible naming                                                              |
+| `ref.resetCamera()`                       | Fit the visible graph, also available through the built-in button                               |
+| `ref.captureScreenshot(options?)`         | PNG Blob of the current view with built-in labels; `includeLabels: false` exports geometry only |
+| `showScreenshotButton`                    | Show the built-in Download PNG button (default true)                                            |
+| `draggableNodes`                          | Opt in to dragging geometry or labels on a horizontal plane (demo enables this)                 |
+| `nodePositions` / `defaultNodePositions`  | Controlled or initial manual position overrides, separate from the graph                        |
+| `onNodePositionsChange` / `onNodeDragEnd` | Proposed position state during dragging and the final proposed position after release           |
+| `ref.resetLayout()`                       | Clear manual position overrides; also available through Reset layout                            |
 
 Filtering prunes the scene; details use the original graph to preserve architectural context. Filtered-out relationships are shown but cannot be selected until the host changes its filters. A selection hidden by filtering is visually cleared without firing a synthetic callback; it reappears if made visible again. This preserves externally controlled selection.
+
+Drag nodes in the demo to rearrange them; drag the background to orbit. Edges follow moved nodes, and Escape cancels a drag. Positions survive filtering and camera resets. Reset layout restores automatic positions. Positions belong to view state, not the architecture schema; controlled applications can save them separately through `onNodePositionsChange`. See the [React package guide](packages/react/README.md) for controlled dragging and screenshot examples.
 
 ## Custom rendering and layout
 
@@ -199,7 +205,7 @@ const myLayout: LayoutFunction = (graph) =>
 
 Custom renderers receive the node, selection/highlight/dimming state, color and opacity. Render local R3F geometry; the viewer owns positions, labels and click handlers. Honor the supplied state for consistent behavior. Unknown types receive a neutral box. `DefaultNodeRenderer`, `DefaultDetailsPanel` and `getNodeColor` are public extension helpers.
 
-The automatic layout uses deterministic breadth-first layers, stable group/ID ordering, and seeded cyclic/disconnected components. Groups influence ordering and appear in labels; parent groups are modeled but not rendered as nested enclosures. `LayoutFunction` returns a `ReadonlyMap<string, [number, number, number]>` for every visible node. Invalid custom positions throw a descriptive programming error. There is no provider-specific ranking.
+The automatic layout uses deterministic breadth-first layers, stable group/ID ordering, and seeded cyclic/disconnected components. Groups influence ordering and appear in labels; parent groups are modeled but not rendered as nested enclosures. `LayoutFunction` receives the full graph and returns a `ReadonlyMap<string, [number, number, number]>` for every node. Filtering preserves these positions; manual overrides apply afterward. Invalid custom positions throw a descriptive programming error. There is no provider-specific ranking.
 
 Directed edges have arrowheads, curved offsets for parallel connections, loops for self-edges, and a deterministic color per arbitrary edge type. Explicit visual settings and then `edgeStyle` override defaults. There are no animations beyond damped camera controls. Rendering is on demand.
 

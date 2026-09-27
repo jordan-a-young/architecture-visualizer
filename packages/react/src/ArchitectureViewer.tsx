@@ -6,6 +6,7 @@ import {
   useState,
   useRef,
   useCallback,
+  useEffect,
 } from 'react';
 import type { ReactNode } from 'react';
 import { getNode, validateGraph } from 'archgraph-core';
@@ -15,6 +16,9 @@ import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
 import { DefaultDetailsPanel } from './DetailsPanel.js';
 import { downloadScreenshot } from './screenshot.js';
+import { retainNodePositions, resolveNodePositions } from './positions.js';
+import type { NodePositions } from './types.js';
+import type { Position3 } from './layout.js';
 import type {
   ArchitectureViewerHandle,
   ArchitectureViewerProps,
@@ -49,6 +53,11 @@ const ValidViewer = forwardRef<
     highlightedNodeIds = [],
     filters,
     layout = 'layered',
+    draggableNodes = false,
+    nodePositions,
+    defaultNodePositions = {},
+    onNodePositionsChange,
+    onNodeDragEnd,
     nodeRenderers,
     edgeStyle,
     showEdgeLabels = false,
@@ -101,10 +110,44 @@ const ValidViewer = forwardRef<
     }
   };
   const visible = useFilteredGraph(graph, filters);
-  const positions = useMemo(
-    () => computeLayout(visible, layout),
-    [visible, layout],
+  const [internalPositions, setInternalPositions] = useState<NodePositions>(
+    () => retainNodePositions(graph, defaultNodePositions),
   );
+  useEffect(() => {
+    setInternalPositions((previous) => retainNodePositions(graph, previous));
+  }, [graph]);
+  const overrides = useMemo(
+    () => retainNodePositions(graph, nodePositions ?? internalPositions),
+    [graph, nodePositions, internalPositions],
+  );
+  // Lay out the whole graph: filtering changes visibility, not saved coordinates.
+  const basePositions = useMemo(
+    () => computeLayout(graph, layout),
+    [graph, layout],
+  );
+  const layoutPositions = useMemo(
+    () =>
+      new Map(
+        visible.nodes.map((node) => [node.id, basePositions.get(node.id)!]),
+      ),
+    [visible, basePositions],
+  );
+  const positions = useMemo(
+    () => resolveNodePositions(layoutPositions, overrides),
+    [layoutPositions, overrides],
+  );
+  const changePositions = useCallback(
+    (next: NodePositions) => {
+      if (nodePositions === undefined) setInternalPositions(next);
+      onNodePositionsChange?.(next);
+    },
+    [nodePositions, onNodePositionsChange],
+  );
+  const moveNode = (node: ArchitectureNode, position: Position3) => {
+    if (getNode(graph, node.id))
+      changePositions({ ...overrides, [node.id]: [...position] });
+  };
+  const resetLayout = useCallback(() => changePositions({}), [changePositions]);
   const candidate = selectedNodeId === undefined ? internalId : selectedNodeId;
   const selected = candidate ? (getNode(visible, candidate) ?? null) : null;
   const select = (node: ArchitectureNode | null) => {
@@ -116,8 +159,9 @@ const ValidViewer = forwardRef<
     () => ({
       resetCamera: () => setReset((value) => value + 1),
       captureScreenshot,
+      resetLayout,
     }),
-    [captureScreenshot],
+    [captureScreenshot, resetLayout],
   );
   const detailsProps = {
     graph,
@@ -140,6 +184,10 @@ const ValidViewer = forwardRef<
             graph={visible}
             onCaptureReady={onCaptureReady}
             positions={positions}
+            layoutPositions={layoutPositions}
+            draggableNodes={draggableNodes}
+            onNodeMove={moveNode}
+            onNodeDragEnd={onNodeDragEnd}
             selectedId={selected?.id ?? null}
             onSelect={select}
             reset={reset}
@@ -159,6 +207,11 @@ const ValidViewer = forwardRef<
             {visible.nodes.length} nodes · {visible.edges.length} relationships
           </span>
           <div className="av-toolbar-actions">
+            {(draggableNodes || Object.keys(overrides).length > 0) && (
+              <button type="button" onClick={resetLayout}>
+                Reset layout
+              </button>
+            )}
             {showScreenshotButton && (
               <button
                 type="button"
@@ -197,7 +250,9 @@ const ValidViewer = forwardRef<
           </div>
         </details>
         <p className="av-controls-hint">
-          Drag to orbit · Right-drag to pan · Scroll to zoom · Esc to clear
+          {draggableNodes
+            ? 'Drag nodes to move · Drag background to orbit · Right-drag to pan · Scroll to zoom · Esc to cancel/clear'
+            : 'Drag to orbit · Right-drag to pan · Scroll to zoom · Esc to clear'}
         </p>
       </div>
       {showDetailsPanel &&

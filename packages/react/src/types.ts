@@ -5,7 +5,8 @@ import type {
   ArchitectureNode,
   GraphFilterOptions,
 } from 'archgraph-core';
-import type { Layout } from './layout.js';
+import type { Layout, Position3 } from './layout.js';
+export type NodePositions = Readonly<Record<string, Position3>>;
 export interface NodeRendererProps {
   node: ArchitectureNode;
   selected: boolean;
@@ -37,6 +38,16 @@ export interface ArchitectureViewerProps {
   highlightedNodeIds?: readonly string[];
   filters?: GraphFilterOptions;
   layout?: Layout;
+  /** Opt in to moving nodes on the horizontal plane at their current height. */
+  draggableNodes?: boolean;
+  /** Controlled manual position overrides, keyed by node ID. */
+  nodePositions?: NodePositions;
+  /** Initial overrides for uncontrolled usage. */
+  defaultNodePositions?: NodePositions;
+  /** Proposed overrides during drag and an empty map on reset. */
+  onNodePositionsChange?: (positions: NodePositions) => void;
+  /** Final proposed position after a completed drag, not a click or cancellation. */
+  onNodeDragEnd?: (node: ArchitectureNode, position: Position3) => void;
   nodeRenderers?: NodeRendererRegistry;
   edgeStyle?: (edge: ArchitectureEdge) => EdgeStyle;
   showEdgeLabels?: boolean;
@@ -50,6 +61,8 @@ export interface ArchitectureViewerProps {
 }
 export interface ArchitectureViewerHandle {
   resetCamera: () => void;
+  /** Clear manual overrides. Controlled consumers must apply onNodePositionsChange. */
+  resetLayout: () => void;
   /** Current camera view at canvas resolution, excluding viewer chrome and inspector. */
   captureScreenshot: (options?: ScreenshotOptions) => Promise<Blob>;
 }
