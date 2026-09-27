@@ -27,3 +27,5 @@ export type {
 export { getEdgeKey } from './edgeKey.js';
 export { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
 export type { EdgeDetailsPanelProps } from './types.js';
+
+export type { WalkthroughState } from './types.js';

@@ -360,3 +360,73 @@
     top: 105px;
   }
 }
+
+.av-walkthrough {
+  position: absolute;
+  bottom: 42px;
+  right: 18px;
+  z-index: 60;
+  max-width: min(360px, calc(100% - 36px));
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #fffffff5;
+  font-size: 12px;
+  box-shadow: 0 3px 12px #2734490c;
+}
+.av-walkthrough p {
+  margin: 3px 0 8px;
+}
+.av-walkthrough ol {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.av-walkthrough li {
+  flex: none;
+}
+.av-walkthrough button,
+.av-details section > button {
+  border: 1px solid #d8e0e8;
+  background: #fff;
+  color: #315b8b;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font: inherit;
+}
+.av-walkthrough button[aria-current] {
+  background: #e8eff7;
+  border-color: #3f6c9f;
+}
+.av-walkthrough button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.av-walk-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.av-walk-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+.av-walk-choices button {
+  text-align: left;
+}
+@media (max-width: 760px) {
+  .av-node-list {
+    top: 145px;
+  }
+  .av-toolbar {
+    left: 12px;
+    right: 12px;
+  }
+}

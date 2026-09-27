@@ -128,6 +128,7 @@ export interface GraphSceneProps {
   edgeKeys: ReadonlyMap<ArchitectureEdge, string>;
   selectedEdgeKey: string | null;
   highlightedEdgeKeys: readonly string[];
+  pathActive?: boolean;
   onEdgeSelect: (edge: ArchitectureEdge | null) => void;
   positions: LayoutResult;
   layoutPositions: LayoutResult;
@@ -161,6 +162,7 @@ function SupportedScene({
   edgeKeys,
   selectedEdgeKey,
   highlightedEdgeKeys,
+  pathActive,
   onEdgeSelect,
 }: GraphSceneProps) {
   const dragLock = useRef(false);
@@ -179,7 +181,7 @@ function SupportedScene({
   const activeEdge = graph.edges.find(
     (edge) => edgeKeys.get(edge) === selectedEdgeKey,
   );
-  const connectedNodes = new Set(connected);
+  const connectedNodes = new Set(pathActive ? highlightedNodeIds : connected);
   if (activeEdge) {
     connectedNodes.add(activeEdge.source);
     connectedNodes.add(activeEdge.target);
@@ -229,8 +231,8 @@ function SupportedScene({
         )!;
         const offset = (siblings.indexOf(i) - (siblings.length - 1) / 2) * 0.8;
         const emphasized =
-          selectedId === edge.source ||
-          selectedId === edge.target ||
+          (!pathActive &&
+            (selectedId === edge.source || selectedId === edge.target)) ||
           selectedEdgeKey === edgeKeys.get(edge) ||
           highlightedEdgeKeys.includes(edgeKeys.get(edge)!);
         return (

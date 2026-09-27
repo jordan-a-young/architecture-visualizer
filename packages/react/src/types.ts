@@ -35,6 +35,11 @@ export interface EdgeDetailsPanelProps {
   onClear: () => void;
   onNodeSelect: (node: ArchitectureNode | null) => void;
 }
+export interface WalkthroughState {
+  startNodeId: string;
+  /** Ordered edge keys; repeated edges and nodes are valid. */
+  edgeKeys: readonly string[];
+}
 export interface ArchitectureViewerProps {
   graph: ArchitectureGraph;
   /** undefined = uncontrolled; null = controlled with no selection. */
@@ -48,6 +53,11 @@ export interface ArchitectureViewerProps {
   onEdgeSelect?: (edge: ArchitectureEdge | null, key: string | null) => void;
   highlightedEdgeKeys?: readonly string[];
   showSearch?: boolean;
+  showWalkthrough?: boolean;
+  /** Active walkthrough owns the inspected node; undefined enables internal state. */
+  walkthrough?: WalkthroughState | null;
+  defaultWalkthrough?: WalkthroughState;
+  onWalkthroughChange?: (state: WalkthroughState | null) => void;
   renderEdgeDetails?: (props: EdgeDetailsPanelProps) => ReactNode;
   filters?: GraphFilterOptions;
   layout?: Layout;

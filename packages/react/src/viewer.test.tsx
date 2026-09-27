@@ -359,3 +359,79 @@ describe('search, focus and edge inspection', () => {
     expect(getEdgeKey(edge, 0)).not.toBe(getEdgeKey(graph.edges[0]!, 0));
   });
 });
+
+describe('connection walkthrough', () => {
+  it('moves forward and back, recognizes dead ends, and resets', () => {
+    render(<ArchitectureViewer graph={graph} defaultSelectedNodeId="a" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start walkthrough' }));
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'API' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(
+      screen.getByRole('heading', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset walkthrough' }));
+    expect(
+      screen.queryByLabelText('Connection walkthrough'),
+    ).not.toBeInTheDocument();
+  });
+  it('honors controlled walkthrough state and declines steps until accepted', () => {
+    const change = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={graph}
+        defaultSelectedNodeId="a"
+        walkthrough={null}
+        onWalkthroughChange={change}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Start walkthrough' }));
+    expect(change).toHaveBeenLastCalledWith({ startNodeId: 'a', edgeKeys: [] });
+    expect(
+      screen.queryByLabelText('Connection walkthrough'),
+    ).not.toBeInTheDocument();
+    rerender(
+      <ArchitectureViewer
+        graph={graph}
+        walkthrough={{ startNodeId: 'a', edgeKeys: [] }}
+        onWalkthroughChange={change}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(
+      screen.getByRole('heading', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+    expect(change).toHaveBeenLastCalledWith({
+      startNodeId: 'a',
+      edgeKeys: [getEdgeKey(graph.edges[0]!, 0)],
+    });
+  });
+  it('does not walk into filtered nodes and truncates removed connections', () => {
+    const change = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={graph}
+        defaultWalkthrough={{ startNodeId: 'a', edgeKeys: [] }}
+        filters={{ types: ['app'] }}
+        onWalkthroughChange={change}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    rerender(
+      <ArchitectureViewer
+        graph={{ ...graph, edges: [] }}
+        walkthrough={{
+          startNodeId: 'a',
+          edgeKeys: [getEdgeKey(graph.edges[0]!, 0)],
+        }}
+        onWalkthroughChange={change}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
+});
