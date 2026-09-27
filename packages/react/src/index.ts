@@ -16,6 +16,7 @@ export { useFilteredGraph } from './hooks.js';
 export type {
   ArchitectureViewerProps,
   ArchitectureViewerHandle,
+  ScreenshotOptions,
   NodeRendererProps,
   NodeRendererRegistry,
   EdgeStyle,

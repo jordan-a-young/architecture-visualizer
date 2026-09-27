@@ -69,6 +69,7 @@ const graph: ArchitectureGraph = { version: '1.0', nodes: [{id:'a',label:'A',typ
 const layout: LayoutFunction = graph => new Map(graph.nodes.map(n => [n.id, [0, 0, 0]]));
 function Custom({ color }: NodeRendererProps) { return <mesh><boxGeometry/><meshBasicMaterial color={color}/></mesh>; }
 const ref = (viewer: ArchitectureViewerHandle | null) => viewer?.resetCamera();
+export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
 if (!validateGraph(graph).valid) throw new Error('Unexpected invalid fixture');
 createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} nodeRenderers={{ custom: Custom }}/>);
 `,

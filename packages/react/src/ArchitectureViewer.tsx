@@ -4,6 +4,8 @@ import {
   useImperativeHandle,
   useMemo,
   useState,
+  useRef,
+  useCallback,
 } from 'react';
 import type { ReactNode } from 'react';
 import { getNode, validateGraph } from 'archgraph-core';
@@ -12,6 +14,7 @@ import { computeLayout } from './layout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
 import { DefaultDetailsPanel } from './DetailsPanel.js';
+import { downloadScreenshot } from './screenshot.js';
 import type {
   ArchitectureViewerHandle,
   ArchitectureViewerProps,
@@ -50,6 +53,7 @@ const ValidViewer = forwardRef<
     edgeStyle,
     showEdgeLabels = false,
     showDetailsPanel = true,
+    showScreenshotButton = true,
     renderDetails,
     className = '',
     style,
@@ -61,6 +65,41 @@ const ValidViewer = forwardRef<
     defaultSelectedNodeId ?? null,
   );
   const [reset, setReset] = useState(0);
+  const captureRef = useRef<
+    ArchitectureViewerHandle['captureScreenshot'] | null
+  >(null);
+  const [captureReady, setCaptureReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const onCaptureReady = useCallback(
+    (capture: ArchitectureViewerHandle['captureScreenshot'] | null) => {
+      captureRef.current = capture;
+      setCaptureReady(capture !== null);
+    },
+    [],
+  );
+  const captureScreenshot = useCallback<
+    ArchitectureViewerHandle['captureScreenshot']
+  >((options) => {
+    if (!captureRef.current)
+      return Promise.reject(
+        new Error('The 3D view is not ready for a screenshot.'),
+      );
+    return captureRef.current(options);
+  }, []);
+  const download = async () => {
+    setCapturing(true);
+    setCaptureError(null);
+    try {
+      downloadScreenshot(await captureScreenshot());
+    } catch (error) {
+      setCaptureError(
+        error instanceof Error ? error.message : 'Screenshot export failed.',
+      );
+    } finally {
+      setCapturing(false);
+    }
+  };
   const visible = useFilteredGraph(graph, filters);
   const positions = useMemo(
     () => computeLayout(visible, layout),
@@ -74,8 +113,11 @@ const ValidViewer = forwardRef<
   };
   useImperativeHandle(
     ref,
-    () => ({ resetCamera: () => setReset((value) => value + 1) }),
-    [],
+    () => ({
+      resetCamera: () => setReset((value) => value + 1),
+      captureScreenshot,
+    }),
+    [captureScreenshot],
   );
   const detailsProps = {
     graph,
@@ -96,6 +138,7 @@ const ValidViewer = forwardRef<
         <SceneBoundary key={reset}>
           <GraphScene
             graph={visible}
+            onCaptureReady={onCaptureReady}
             positions={positions}
             selectedId={selected?.id ?? null}
             onSelect={select}
@@ -115,10 +158,29 @@ const ValidViewer = forwardRef<
           <span>
             {visible.nodes.length} nodes · {visible.edges.length} relationships
           </span>
-          <button type="button" onClick={() => setReset((value) => value + 1)}>
-            Reset camera
-          </button>
+          <div className="av-toolbar-actions">
+            {showScreenshotButton && (
+              <button
+                type="button"
+                disabled={!captureReady || capturing}
+                onClick={download}
+              >
+                {capturing ? 'Exporting…' : 'Download PNG'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setReset((value) => value + 1)}
+            >
+              Reset camera
+            </button>
+          </div>
         </div>
+        {captureError && (
+          <p role="alert" className="av-export-error">
+            {captureError}
+          </p>
+        )}
         <details className="av-node-list">
           <summary>Browse nodes ({visible.nodes.length})</summary>
           <div>

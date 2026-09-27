@@ -217,6 +217,26 @@
   font-size: 11px;
   color: #43566d;
 }
+.av-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.av-toolbar button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.av-export-error {
+  position: absolute;
+  bottom: 40px;
+  left: 20px;
+  right: 20px;
+  z-index: 60;
+  padding: 10px;
+  background: #fff5f5;
+  color: #783d3d;
+}
 .av-node-list {
   position: absolute;
   left: 20px;
