@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
-import { QuadraticBezierCurve3, Quaternion, Vector3 } from 'three';
+import {
+  CatmullRomCurve3,
+  QuadraticBezierCurve3,
+  Quaternion,
+  Vector3,
+} from 'three';
 import type { ArchitectureEdge } from 'archgraph-core';
 import type { Position3 } from './layout.js';
 import type { EdgeStyle } from './types.js';
@@ -19,8 +24,12 @@ export function GraphEdge({
   label,
   style,
   offset = 0,
+  edgeKey,
+  onSelect,
 }: {
   edge: ArchitectureEdge;
+  edgeKey: string;
+  onSelect: () => void;
   start: Position3;
   end: Position3;
   emphasized: boolean;
@@ -61,10 +70,25 @@ export function GraphEdge({
     );
     return { points, arrow, rotation, midpoint: points[20]! };
   }, [start, end, edge.source, edge.target, offset]);
+  const hitCurve = useMemo(() => new CatmullRomCurve3(points), [points]);
   const visual = { ...defaultEdgeStyle(edge.type), ...edge.visual, ...style };
   const opacity = dimmed ? 0.16 : emphasized ? 1 : 0.62;
   return (
-    <group>
+    <group
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect();
+      }}
+    >
+      <mesh>
+        <tubeGeometry args={[hitCurve, 40, 0.12, 6, false]} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={false}
+          colorWrite={false}
+        />
+      </mesh>
       <Line
         points={points}
         color={visual.color}
@@ -84,12 +108,23 @@ export function GraphEdge({
         <Html
           position={midpoint}
           center
-          style={{ pointerEvents: 'none', opacity }}
+          style={{ opacity }}
           zIndexRange={[20, 0]}
         >
-          <span className="av-edge-label" data-av-export-label="edge">
-            {edge.label ?? edge.type}
-          </span>
+          <button
+            type="button"
+            className="av-edge-label"
+            data-av-export-label="edge"
+            data-edge-key={edgeKey}
+            aria-label={`Inspect relationship: ${edge.label ?? edge.type ?? 'relationship'}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect();
+            }}
+          >
+            {edge.label ?? edge.type ?? 'relationship'}
+          </button>
         </Html>
       )}
     </group>

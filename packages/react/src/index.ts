@@ -23,3 +23,7 @@ export type {
   EdgeStyle,
   DetailsPanelProps,
 } from './types.js';
+
+export { getEdgeKey } from './edgeKey.js';
+export { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
+export type { EdgeDetailsPanelProps } from './types.js';
