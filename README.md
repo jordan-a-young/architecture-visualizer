@@ -235,3 +235,7 @@ This vertical slice targets small-to-medium documentation graphs, not massive gr
 ## License
 
 MIT. npm publication requires owner approval; see the publishing checklist.
+
+## Exploration controls
+
+Browse nodes supports search without hiding the graph. Select a node and use Focus node to center it. Click a relationship line/label or use the Relationships list to inspect its direction and metadata. These controls remain compatible with external filters, custom rendering, controlled selection, and the keyboard inspector. See the [React guide](packages/react/README.md#search-focus-and-relationships) for APIs and edge-key behavior.
