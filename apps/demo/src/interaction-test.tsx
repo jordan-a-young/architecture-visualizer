@@ -10,6 +10,7 @@ import type {
 } from 'archgraph-react';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
+import { SavedViews } from './SavedViews';
 
 const graph: ArchitectureGraph = {
   version: '1.0',
@@ -41,6 +42,7 @@ function Custom({ color, opacity }: NodeRendererProps) {
 function Fixture() {
   const viewer = useRef<ArchitectureViewerHandle>(null);
   const [error, setError] = useState('');
+  const [viewDump, setViewDump] = useState('');
   const [walkthrough, setWalkthrough] = useState<WalkthroughState | null>(null);
   const [filtered, setFiltered] = useState(false);
   const [positions, setPositions] = useState<NodePositions>({});
@@ -65,6 +67,21 @@ function Fixture() {
   };
   return (
     <>
+      {new URLSearchParams(location.search).has('saved') && (
+        <>
+          <SavedViews viewer={viewer} />
+          <button
+            onClick={() =>
+              setViewDump(JSON.stringify(viewer.current!.getViewState()))
+            }
+          >
+            Inspect view state
+          </button>
+          <output style={{ display: 'none' }} aria-label="View state">
+            {viewDump}
+          </output>
+        </>
+      )}
       <button onClick={exportScene}>Export without labels</button>
       <button onClick={() => setFiltered(!filtered)}>Toggle filter</button>
       <button onClick={() => setEnabled(!enabled)}>Toggle dragging</button>
@@ -94,7 +111,8 @@ function Fixture() {
           }}
           onNodeDragEnd={() => setDragEnds((count) => count + 1)}
           showEdgeLabels
-          filters={filtered ? { types: ['custom', 'database'] } : undefined}
+          filters={filtered ? { types: ['custom', 'database'] } : {}}
+          onFiltersChange={(next) => setFiltered(!!next.types)}
           nodeRenderers={{ custom: Custom }}
         />
       </div>
