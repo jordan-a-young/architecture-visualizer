@@ -5,6 +5,7 @@ import type {
   ArchitectureNode,
   GraphFilterOptions,
 } from 'archgraph-core';
+import type { ViewerViewState } from './viewState.js';
 import type { Layout, Position3 } from './layout.js';
 export type NodePositions = Readonly<Record<string, Position3>>;
 export interface NodeRendererProps {
@@ -60,6 +61,8 @@ export interface ArchitectureViewerProps {
   onWalkthroughChange?: (state: WalkthroughState | null) => void;
   renderEdgeDetails?: (props: EdgeDetailsPanelProps) => ReactNode;
   filters?: GraphFilterOptions;
+  defaultFilters?: GraphFilterOptions;
+  onFiltersChange?: (filters: GraphFilterOptions) => void;
   layout?: Layout;
   /** Opt in to moving nodes on the horizontal plane at their current height. */
   draggableNodes?: boolean;
@@ -84,6 +87,10 @@ export interface ArchitectureViewerProps {
 }
 export interface ArchitectureViewerHandle {
   resetCamera: () => void;
+  /** Serializable snapshot; predicate filters cannot be saved. */
+  getViewState: () => ViewerViewState;
+  /** Validates before proposing updates to controlled fields. */
+  restoreViewState: (state: unknown) => void;
   /** Focus a visible node without changing selection. Returns false if hidden/missing. */
   focusNode: (id: string) => boolean;
   /** Clear manual overrides. Controlled consumers must apply onNodePositionsChange. */

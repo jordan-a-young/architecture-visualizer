@@ -1,18 +1,21 @@
-import { StrictMode, useMemo, useState } from 'react';
+import { StrictMode, useMemo, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArchitectureGraphSchema } from 'archgraph-core';
 import { ArchitectureViewer, getNodeColor } from 'archgraph-react';
 import 'archgraph-react/styles.css';
+import type { ArchitectureViewerHandle } from 'archgraph-react';
+import { SavedViews } from './SavedViews';
 import sample from '../../../examples/distributed-system.json';
 import './demo.css';
 const graph = ArchitectureGraphSchema.parse(sample);
 const types = [...new Set(graph.nodes.map((node) => node.type))].sort();
 function Demo() {
+  const viewer = useRef<ArchitectureViewerHandle>(null);
   const [type, setType] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(false);
   const filters = useMemo(
-    () => (type === 'all' ? undefined : { types: [type] }),
+    () => (type === 'all' ? {} : { types: [type] }),
     [type],
   );
   return (
@@ -70,9 +73,14 @@ function Demo() {
         </div>
         <span>Click to inspect · Drag to rearrange</span>
       </div>
+      <SavedViews viewer={viewer} />
       <div className="viewer-shell">
         <ArchitectureViewer
+          ref={viewer}
           graph={graph}
+          onFiltersChange={(next) =>
+            setType(next.types?.length === 1 ? next.types[0]! : 'all')
+          }
           draggableNodes
           selectedNodeId={selectedId}
           onNodeSelect={(node) => setSelectedId(node?.id ?? null)}

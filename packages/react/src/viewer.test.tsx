@@ -435,3 +435,84 @@ describe('connection walkthrough', () => {
     expect(change).not.toHaveBeenCalled();
   });
 });
+
+describe('saved views', () => {
+  it('restores internal selection, filters, positions and walkthrough without mutating input', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    render(
+      <ArchitectureViewer ref={ref} graph={graph} defaultSelectedNodeId="a" />,
+    );
+    const saved = ref.current!.getViewState();
+    expect(saved.camera).toBeNull();
+    const input = {
+      ...saved,
+      nodePositions: { b: [8, 0, 7] },
+      filters: { types: ['service'] },
+      selectedNodeId: 'b',
+    };
+    const json = JSON.stringify(input);
+    act(() => ref.current!.restoreViewState(input));
+    expect(screen.getByRole('heading', { name: 'API' })).toBeInTheDocument();
+    expect(screen.queryByText('scene:a')).not.toBeInTheDocument();
+    expect(ref.current!.getViewState().nodePositions.b).toEqual([8, 0, 7]);
+    expect(JSON.stringify(input)).toBe(json);
+    act(() => ref.current!.restoreViewState(saved));
+    expect(screen.getByText('scene:a')).toBeInTheDocument();
+    expect(ref.current!.getViewState().selectedNodeId).toBe('a');
+  });
+  it('proposes controlled updates and rejects malformed snapshots atomically', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    const selected = vi.fn(),
+      filters = vi.fn(),
+      positions = vi.fn();
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        selectedNodeId="a"
+        filters={{}}
+        nodePositions={{}}
+        onNodeSelect={selected}
+        onFiltersChange={filters}
+        onNodePositionsChange={positions}
+      />,
+    );
+    const saved = {
+      ...ref.current!.getViewState(),
+      selectedNodeId: 'b',
+      filters: { types: ['service'] },
+      nodePositions: { b: [3, 0, 4] },
+    };
+    act(() => ref.current!.restoreViewState(saved));
+    expect(selected).toHaveBeenLastCalledWith(graph.nodes[1]);
+    expect(filters).toHaveBeenLastCalledWith({ types: ['service'] });
+    expect(positions).toHaveBeenLastCalledWith({ b: [3, 0, 4] });
+    expect(
+      screen.getByRole('heading', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('scene:a')).toBeInTheDocument();
+    selected.mockClear();
+    filters.mockClear();
+    positions.mockClear();
+    expect(() =>
+      ref.current!.restoreViewState({
+        ...saved,
+        camera: { position: [0, 0, 0], target: [0, 0, 0] },
+      }),
+    ).toThrow();
+    expect(selected).not.toHaveBeenCalled();
+    expect(filters).not.toHaveBeenCalled();
+    expect(positions).not.toHaveBeenCalled();
+  });
+  it('rejects predicate filters rather than silently losing them', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        filters={{ predicate: () => true }}
+      />,
+    );
+    expect(() => ref.current!.getViewState()).toThrow('Predicate filters');
+  });
+});

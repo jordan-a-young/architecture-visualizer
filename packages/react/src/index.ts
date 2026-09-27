@@ -29,3 +29,10 @@ export { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
 export type { EdgeDetailsPanelProps } from './types.js';
 
 export type { WalkthroughState } from './types.js';
+
+export { parseViewState } from './viewState.js';
+export type {
+  CameraState,
+  ViewerViewState,
+  SerializableGraphFilters,
+} from './viewState.js';

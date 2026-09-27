@@ -184,3 +184,39 @@ footer i {
     gap: 10px;
   }
 }
+
+.saved-views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 16px;
+  font-size: 12px;
+  color: #52657b;
+}
+.saved-views label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.saved-views input,
+.saved-views select,
+.saved-views button {
+  border: 1px solid #d8e0e8;
+  border-radius: 5px;
+  background: white;
+  padding: 6px 9px;
+  color: inherit;
+  font: inherit;
+  max-width: 200px;
+}
+.saved-views button {
+  cursor: pointer;
+}
+.saved-views button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.saved-views [role='status'] {
+  font-size: 11px;
+}
