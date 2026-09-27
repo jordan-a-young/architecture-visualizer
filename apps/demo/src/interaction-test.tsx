@@ -6,6 +6,7 @@ import type {
   ArchitectureViewerHandle,
   NodeRendererProps,
   NodePositions,
+  WalkthroughState,
 } from 'archgraph-react';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -20,6 +21,15 @@ const graph: ArchitectureGraph = {
   ],
   edges: [{ source: 'a', target: 'b', label: 'reads', type: 'reads' }],
 };
+const walkthroughGraph: ArchitectureGraph = {
+  ...graph,
+  edges: [
+    { id: 'ab', source: 'a', target: 'b', type: 'calls' },
+    { id: 'bc', source: 'b', target: 'c', type: 'publishes' },
+    { id: 'ba', source: 'b', target: 'a', type: 'retries' },
+    { id: 'bb', source: 'b', target: 'b', type: 'loops' },
+  ],
+};
 function Custom({ color, opacity }: NodeRendererProps) {
   return (
     <mesh>
@@ -31,6 +41,7 @@ function Custom({ color, opacity }: NodeRendererProps) {
 function Fixture() {
   const viewer = useRef<ArchitectureViewerHandle>(null);
   const [error, setError] = useState('');
+  const [walkthrough, setWalkthrough] = useState<WalkthroughState | null>(null);
   const [filtered, setFiltered] = useState(false);
   const [positions, setPositions] = useState<NodePositions>({});
   const [dragEnds, setDragEnds] = useState(0);
@@ -67,7 +78,15 @@ function Fixture() {
       <div style={{ height: 640, width: '100%' }}>
         <ArchitectureViewer
           ref={viewer}
-          graph={graph}
+          graph={
+            new URLSearchParams(location.search).has('walkthrough')
+              ? walkthroughGraph
+              : graph
+          }
+          walkthrough={controlled ? walkthrough : undefined}
+          onWalkthroughChange={(state) => {
+            if (accept) setWalkthrough(state);
+          }}
           draggableNodes={enabled}
           nodePositions={controlled ? positions : undefined}
           onNodePositionsChange={(next) => {
