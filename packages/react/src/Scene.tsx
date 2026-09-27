@@ -14,6 +14,7 @@ import type { ArchitectureViewerProps } from './types.js';
 import { InteractiveNode } from './InteractiveNode.js';
 import { GraphEdge } from './Edge.js';
 import { captureViewport } from './screenshot.js';
+import type { CameraState } from './viewState.js';
 import type { ArchitectureViewerHandle } from './types.js';
 
 function CaptureBridge({
@@ -45,11 +46,15 @@ function CameraRig({
   layoutPositions,
   reset,
   focusRequest,
+  onCameraReady,
+  cameraRequest,
 }: {
   positions: LayoutResult;
   layoutPositions: LayoutResult;
   reset: number;
   focusRequest?: { id: string; token: number } | null;
+  onCameraReady?: (reader: (() => CameraState) | null) => void;
+  cameraRequest?: { state: CameraState; token: number } | null;
 }) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const { camera, size, invalidate } = useThree();
@@ -109,6 +114,27 @@ function CameraRig({
     controls.current.update();
     invalidate();
   }, [focusRequest, camera, invalidate]);
+  useEffect(() => {
+    onCameraReady?.(() => ({
+      position: camera.position.toArray() as Position3,
+      target: controls.current!.target.toArray() as Position3,
+    }));
+    return () => onCameraReady?.(null);
+  }, [camera, onCameraReady]);
+  useEffect(() => {
+    if (!cameraRequest || !controls.current) return;
+    const orbit = controls.current;
+    const damping = orbit.enableDamping;
+    orbit.enableDamping = false;
+    orbit.update();
+    camera.position.fromArray(cameraRequest.state.position);
+    orbit.target.fromArray(cameraRequest.state.target);
+    camera.far = Math.max(1000, camera.position.distanceTo(orbit.target) * 10);
+    camera.updateProjectionMatrix();
+    orbit.update();
+    orbit.enableDamping = damping;
+    invalidate();
+  }, [cameraRequest, camera, invalidate]);
   return (
     <OrbitControls
       ref={controls}
@@ -124,6 +150,8 @@ export interface GraphSceneProps {
     capture: ArchitectureViewerHandle['captureScreenshot'] | null,
   ) => void;
   graph: ArchitectureGraph;
+  onCameraReady?: (reader: (() => CameraState) | null) => void;
+  cameraRequest?: { state: CameraState; token: number } | null;
   focusRequest?: { id: string; token: number } | null;
   edgeKeys: ReadonlyMap<ArchitectureEdge, string>;
   selectedEdgeKey: string | null;
@@ -159,6 +187,8 @@ function SupportedScene({
   onNodeMove,
   onNodeDragEnd,
   focusRequest,
+  onCameraReady,
+  cameraRequest,
   edgeKeys,
   selectedEdgeKey,
   highlightedEdgeKeys,
@@ -218,6 +248,8 @@ function SupportedScene({
         layoutPositions={layoutPositions}
         reset={reset}
         focusRequest={focusRequest}
+        onCameraReady={onCameraReady}
+        cameraRequest={cameraRequest}
       />
       <CaptureBridge onCaptureReady={onCaptureReady} />
       <gridHelper

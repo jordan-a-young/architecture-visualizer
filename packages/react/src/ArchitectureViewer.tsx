@@ -18,6 +18,9 @@ import type {
 import { computeLayout } from './layout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
+import { parseViewState } from './viewState.js';
+import type { CameraState, ViewerViewState } from './viewState.js';
+import type { GraphFilterOptions } from 'archgraph-core';
 import { Walkthrough } from './Walkthrough.js';
 import { resolveWalkthrough } from './walkthrough.js';
 import type { WalkthroughState } from './types.js';
@@ -71,6 +74,8 @@ const ValidViewer = forwardRef<
     onWalkthroughChange,
     renderEdgeDetails,
     filters,
+    defaultFilters = {},
+    onFiltersChange,
     layout = 'layered',
     draggableNodes = false,
     nodePositions,
@@ -93,6 +98,17 @@ const ValidViewer = forwardRef<
     defaultSelectedNodeId ?? null,
   );
   const [reset, setReset] = useState(0);
+  const [internalFilters, setInternalFilters] =
+    useState<GraphFilterOptions>(defaultFilters);
+  const effectiveFilters = filters === undefined ? internalFilters : filters;
+  const cameraReader = useRef<(() => CameraState) | null>(null);
+  const [cameraRequest, setCameraRequest] = useState<{
+    state: CameraState;
+    token: number;
+  } | null>(null);
+  const onCameraReady = useCallback((reader: (() => CameraState) | null) => {
+    cameraReader.current = reader;
+  }, []);
   const [query, setQuery] = useState('');
   const [internalWalkthrough, setInternalWalkthrough] =
     useState<WalkthroughState | null>(defaultWalkthrough ?? null);
@@ -157,7 +173,7 @@ const ValidViewer = forwardRef<
       setCapturing(false);
     }
   };
-  const visible = useFilteredGraph(graph, filters);
+  const visible = useFilteredGraph(graph, effectiveFilters);
   const [internalPositions, setInternalPositions] = useState<NodePositions>(
     () => retainNodePositions(graph, defaultNodePositions),
   );
@@ -221,6 +237,7 @@ const ValidViewer = forwardRef<
     return true;
   };
   const resetCamera = () => {
+    setCameraRequest(null);
     setFocusRequest(null);
     setReset((value) => value + 1);
   };
@@ -245,16 +262,66 @@ const ValidViewer = forwardRef<
     if (selectedNodeId === undefined) setInternalId(node?.id ?? null);
     onNodeSelect?.(node);
   };
-  useImperativeHandle(
-    ref,
-    () => ({
-      resetCamera,
-      focusNode,
-      captureScreenshot,
-      resetLayout,
-    }),
-    [captureScreenshot, resetLayout, visible],
-  );
+  const getViewState = (): ViewerViewState => {
+    if (effectiveFilters.predicate)
+      throw new Error(
+        'Predicate filters cannot be saved. Use serializable filters.',
+      );
+    return parseViewState({
+      version: 1,
+      camera: cameraReader.current?.() ?? null,
+      nodePositions: overrides,
+      filters: Object.fromEntries(
+        Object.entries(effectiveFilters).filter(
+          ([key, value]) => key !== 'predicate' && value !== undefined,
+        ),
+      ),
+      selectedNodeId: candidate && getNode(graph, candidate) ? candidate : null,
+      selectedEdgeKey: graph.edges.some(
+        (edge) => edgeKeys.get(edge) === edgeCandidate,
+      )
+        ? edgeCandidate
+        : null,
+      walkthrough: path?.state ?? null,
+    });
+  };
+  const restoreViewState = (input: unknown) => {
+    const state = parseViewState(input);
+    // Validate everything before invoking callbacks or changing any state.
+    const retained = retainNodePositions(graph, state.nodePositions);
+    if (filters === undefined) setInternalFilters(state.filters);
+    onFiltersChange?.(state.filters);
+    changePositions(retained);
+    const node = state.selectedNodeId
+      ? (getNode(graph, state.selectedNodeId) ?? null)
+      : null;
+    if (selectedNodeId === undefined) setInternalId(node?.id ?? null);
+    onNodeSelect?.(node);
+    const edge =
+      graph.edges.find(
+        (edge) => edgeKeys.get(edge) === state.selectedEdgeKey,
+      ) ?? null;
+    const key = edge ? edgeKeys.get(edge)! : null;
+    if (selectedEdgeKey === undefined) setInternalEdgeKey(key);
+    onEdgeSelect?.(edge, key);
+    changeWalkthrough(
+      resolveWalkthrough(graph, state.walkthrough)?.state ?? null,
+    );
+    setFocusRequest(null);
+    setCameraRequest((previous) =>
+      state.camera
+        ? { state: state.camera, token: (previous?.token ?? 0) + 1 }
+        : null,
+    );
+  };
+  useImperativeHandle(ref, () => ({
+    resetCamera,
+    focusNode,
+    getViewState,
+    restoreViewState,
+    captureScreenshot,
+    resetLayout,
+  }));
   const detailsProps = {
     graph,
     node: selected,
@@ -276,6 +343,8 @@ const ValidViewer = forwardRef<
             graph={visible}
             onCaptureReady={onCaptureReady}
             focusRequest={focusRequest}
+            onCameraReady={onCameraReady}
+            cameraRequest={cameraRequest}
             edgeKeys={edgeKeys}
             selectedEdgeKey={selectedEdge ? edgeCandidate : null}
             onEdgeSelect={selectEdge}
