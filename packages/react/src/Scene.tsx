@@ -3,7 +3,11 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box3, PerspectiveCamera, Vector3 } from 'three';
 import type { ComponentRef } from 'react';
-import type { ArchitectureGraph, ArchitectureNode } from 'archgraph-core';
+import type {
+  ArchitectureGraph,
+  ArchitectureNode,
+  ArchitectureEdge,
+} from 'archgraph-core';
 import { getNeighbors } from 'archgraph-core';
 import type { LayoutResult, Position3 } from './layout.js';
 import type { ArchitectureViewerProps } from './types.js';
@@ -40,10 +44,12 @@ function CameraRig({
   positions,
   layoutPositions,
   reset,
+  focusRequest,
 }: {
   positions: LayoutResult;
   layoutPositions: LayoutResult;
   reset: number;
+  focusRequest?: { id: string; token: number } | null;
 }) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const { camera, size, invalidate } = useThree();
@@ -89,6 +95,20 @@ function CameraRig({
     }
     invalidate();
   }, [framingKey, reset, camera, size.width, size.height, invalidate]);
+  useEffect(() => {
+    if (!focusRequest) return;
+    const position = latestPositions.current.get(focusRequest.id);
+    if (!position || !controls.current) return;
+    const target = new Vector3(...position);
+    const direction = camera.position
+      .clone()
+      .sub(controls.current.target)
+      .normalize();
+    camera.position.copy(target.clone().add(direction.multiplyScalar(10)));
+    controls.current.target.copy(target);
+    controls.current.update();
+    invalidate();
+  }, [focusRequest, camera, invalidate]);
   return (
     <OrbitControls
       ref={controls}
@@ -104,6 +124,11 @@ export interface GraphSceneProps {
     capture: ArchitectureViewerHandle['captureScreenshot'] | null,
   ) => void;
   graph: ArchitectureGraph;
+  focusRequest?: { id: string; token: number } | null;
+  edgeKeys: ReadonlyMap<ArchitectureEdge, string>;
+  selectedEdgeKey: string | null;
+  highlightedEdgeKeys: readonly string[];
+  onEdgeSelect: (edge: ArchitectureEdge | null) => void;
   positions: LayoutResult;
   layoutPositions: LayoutResult;
   draggableNodes: boolean;
@@ -132,6 +157,11 @@ function SupportedScene({
   draggableNodes,
   onNodeMove,
   onNodeDragEnd,
+  focusRequest,
+  edgeKeys,
+  selectedEdgeKey,
+  highlightedEdgeKeys,
+  onEdgeSelect,
 }: GraphSceneProps) {
   const dragLock = useRef(false);
   const connected = useMemo(
@@ -146,6 +176,15 @@ function SupportedScene({
       ),
     [graph, selectedId],
   );
+  const activeEdge = graph.edges.find(
+    (edge) => edgeKeys.get(edge) === selectedEdgeKey,
+  );
+  const connectedNodes = new Set(connected);
+  if (activeEdge) {
+    connectedNodes.add(activeEdge.source);
+    connectedNodes.add(activeEdge.target);
+  }
+  const hasSelection = !!selectedId || !!activeEdge;
   const highlighted = new Set(highlightedNodeIds);
   const groupNames = new Map(
     graph.groups.map((group) => [group.id, group.label]),
@@ -176,6 +215,7 @@ function SupportedScene({
         positions={positions}
         layoutPositions={layoutPositions}
         reset={reset}
+        focusRequest={focusRequest}
       />
       <CaptureBridge onCaptureReady={onCaptureReady} />
       <gridHelper
@@ -189,15 +229,20 @@ function SupportedScene({
         )!;
         const offset = (siblings.indexOf(i) - (siblings.length - 1) / 2) * 0.8;
         const emphasized =
-          selectedId === edge.source || selectedId === edge.target;
+          selectedId === edge.source ||
+          selectedId === edge.target ||
+          selectedEdgeKey === edgeKeys.get(edge) ||
+          highlightedEdgeKeys.includes(edgeKeys.get(edge)!);
         return (
           <GraphEdge
             key={edge.id ?? `edge-${i}`}
             edge={edge}
+            edgeKey={edgeKeys.get(edge)!}
+            onSelect={() => onEdgeSelect(edge)}
             start={positions.get(edge.source)!}
             end={positions.get(edge.target)!}
             emphasized={emphasized}
-            dimmed={!!selectedId && !emphasized}
+            dimmed={hasSelection && !emphasized}
             label={!!showEdgeLabels || emphasized}
             offset={offset}
             style={edgeStyle?.(edge)}
@@ -207,7 +252,9 @@ function SupportedScene({
       {graph.nodes.map((node) => {
         const selected = node.id === selectedId;
         const dimmed =
-          !!selectedId && !connected.has(node.id) && !highlighted.has(node.id);
+          hasSelection &&
+          !connectedNodes.has(node.id) &&
+          !highlighted.has(node.id);
         return (
           <InteractiveNode
             key={node.id}

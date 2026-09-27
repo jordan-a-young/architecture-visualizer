@@ -319,3 +319,44 @@
   color: #8793a2;
   cursor: default;
 }
+
+.av-node-list input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #d8e0e8;
+  border-radius: 4px;
+  font: inherit;
+}
+.av-edge-list {
+  border-top: 1px solid #dfe5eb;
+  margin-top: 8px;
+  padding-top: 8px;
+  max-height: 180px;
+  overflow: auto;
+}
+.av-edge-list button {
+  display: block;
+  width: 100%;
+}
+.av-viewer .av-edge-label {
+  font: 9px system-ui;
+  border: 1px solid transparent;
+}
+.av-viewer .av-edge-label:hover {
+  border-color: #8394ab;
+}
+.av-viewer input:focus-visible {
+  outline: 3px solid #3f77bc;
+}
+@media (max-width: 760px) {
+  .av-toolbar {
+    align-items: flex-start;
+  }
+  .av-toolbar > span {
+    max-width: 100px;
+  }
+  .av-node-list {
+    top: 105px;
+  }
+}

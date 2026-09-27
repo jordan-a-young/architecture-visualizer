@@ -21,10 +21,14 @@ vi.mock('./Scene.js', () => ({
     reset,
     positions,
     onNodeMove,
+    focusRequest,
+    selectedEdgeKey,
   }: GraphSceneProps) => (
     <div
       data-testid="scene"
       data-selected={selectedId ?? ''}
+      data-edge={selectedEdgeKey ?? ''}
+      data-focus={focusRequest?.id ?? ''}
       data-reset={reset}
       data-positions={JSON.stringify(Object.fromEntries(positions))}
     >
@@ -41,6 +45,7 @@ vi.mock('./Scene.js', () => ({
   ),
 }));
 import { ArchitectureViewer } from './ArchitectureViewer.js';
+import { getEdgeKey } from './edgeKey.js';
 const graph: ArchitectureGraph = {
   version: '1.0',
   groups: [],
@@ -271,5 +276,86 @@ describe('manual positions', () => {
     );
     rerender(<ArchitectureViewer graph={graph} />);
     expect(positions().a).not.toEqual([9, 0, 9]);
+  });
+});
+
+describe('search, focus and edge inspection', () => {
+  it('searches the visible node list without filtering the scene and focuses without selecting', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    const { rerender } = render(<ArchitectureViewer ref={ref} graph={graph} />);
+    fireEvent.click(screen.getByText('Browse nodes (2)'));
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search nodes' }), {
+      target: { value: 'public' },
+    });
+    const list = screen.getByText('Browse nodes (2)').parentElement!;
+    expect(
+      within(list).getByRole('button', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+    expect(
+      within(list).queryByRole('button', { name: 'API' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('scene:b')).toBeInTheDocument();
+    act(() => {
+      expect(ref.current!.focusNode('b')).toBe(true);
+    });
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-focus', 'b');
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-selected', '');
+    rerender(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        filters={{ types: ['app'] }}
+      />,
+    );
+    act(() => {
+      expect(ref.current!.focusNode('b')).toBe(false);
+    });
+  });
+  it('inspects anonymous edges, clears on node selection, and respects controlled rejection', () => {
+    const selected = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer graph={graph} onEdgeSelect={selected} />,
+    );
+    fireEvent.click(screen.getByText('Browse nodes (2)'));
+    fireEvent.click(screen.getByText('Relationships (1)'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Frontend → API · calls' }),
+    );
+    expect(screen.getByLabelText('Relationship details')).toHaveTextContent(
+      'HTTP',
+    );
+    expect(selected).toHaveBeenLastCalledWith(
+      graph.edges[0],
+      getEdgeKey(graph.edges[0]!, 0),
+    );
+    fireEvent.click(screen.getByText('scene:b'));
+    expect(
+      screen.queryByLabelText('Relationship details'),
+    ).not.toBeInTheDocument();
+    rerender(
+      <ArchitectureViewer
+        graph={graph}
+        selectedEdgeKey={null}
+        onEdgeSelect={selected}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Frontend → API · calls' }),
+    );
+    expect(
+      screen.queryByLabelText('Relationship details'),
+    ).not.toBeInTheDocument();
+    rerender(
+      <ArchitectureViewer
+        graph={graph}
+        selectedEdgeKey={getEdgeKey(graph.edges[0]!, 0)}
+      />,
+    );
+    expect(screen.getByLabelText('Relationship details')).toBeInTheDocument();
+  });
+  it('separates explicit and anonymous keys and preserves explicit IDs across reorder', () => {
+    const edge = { id: 'index:0', source: 'a', target: 'b' };
+    expect(getEdgeKey(edge, 0)).toBe(getEdgeKey(edge, 8));
+    expect(getEdgeKey(edge, 0)).not.toBe(getEdgeKey(graph.edges[0]!, 0));
   });
 });

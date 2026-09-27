@@ -29,6 +29,12 @@ export interface DetailsPanelProps {
   visibleNodeIds?: readonly string[];
   onNodeSelect: (node: ArchitectureNode | null) => void;
 }
+export interface EdgeDetailsPanelProps {
+  graph: ArchitectureGraph;
+  edge: ArchitectureEdge;
+  onClear: () => void;
+  onNodeSelect: (node: ArchitectureNode | null) => void;
+}
 export interface ArchitectureViewerProps {
   graph: ArchitectureGraph;
   /** undefined = uncontrolled; null = controlled with no selection. */
@@ -36,6 +42,13 @@ export interface ArchitectureViewerProps {
   defaultSelectedNodeId?: string;
   onNodeSelect?: (node: ArchitectureNode | null) => void;
   highlightedNodeIds?: readonly string[];
+  /** Keys from getEdgeKey(edge, indexInFullGraph). undefined = uncontrolled. */
+  selectedEdgeKey?: string | null;
+  defaultSelectedEdgeKey?: string;
+  onEdgeSelect?: (edge: ArchitectureEdge | null, key: string | null) => void;
+  highlightedEdgeKeys?: readonly string[];
+  showSearch?: boolean;
+  renderEdgeDetails?: (props: EdgeDetailsPanelProps) => ReactNode;
   filters?: GraphFilterOptions;
   layout?: Layout;
   /** Opt in to moving nodes on the horizontal plane at their current height. */
@@ -61,6 +74,8 @@ export interface ArchitectureViewerProps {
 }
 export interface ArchitectureViewerHandle {
   resetCamera: () => void;
+  /** Focus a visible node without changing selection. Returns false if hidden/missing. */
+  focusNode: (id: string) => boolean;
   /** Clear manual overrides. Controlled consumers must apply onNodePositionsChange. */
   resetLayout: () => void;
   /** Current camera view at canvas resolution, excluding viewer chrome and inspector. */

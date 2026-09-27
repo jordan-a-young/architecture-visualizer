@@ -10,10 +10,16 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import { getNode, validateGraph } from 'archgraph-core';
-import type { ArchitectureGraph, ArchitectureNode } from 'archgraph-core';
+import type {
+  ArchitectureGraph,
+  ArchitectureNode,
+  ArchitectureEdge,
+} from 'archgraph-core';
 import { computeLayout } from './layout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
+import { getEdgeKey } from './edgeKey.js';
+import { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
 import { DefaultDetailsPanel } from './DetailsPanel.js';
 import { downloadScreenshot } from './screenshot.js';
 import { retainNodePositions, resolveNodePositions } from './positions.js';
@@ -51,6 +57,12 @@ const ValidViewer = forwardRef<
     defaultSelectedNodeId,
     onNodeSelect,
     highlightedNodeIds = [],
+    selectedEdgeKey,
+    defaultSelectedEdgeKey,
+    onEdgeSelect,
+    highlightedEdgeKeys = [],
+    showSearch = true,
+    renderEdgeDetails,
     filters,
     layout = 'layered',
     draggableNodes = false,
@@ -74,6 +86,21 @@ const ValidViewer = forwardRef<
     defaultSelectedNodeId ?? null,
   );
   const [reset, setReset] = useState(0);
+  const [query, setQuery] = useState('');
+  const [internalEdgeKey, setInternalEdgeKey] = useState<string | null>(
+    defaultSelectedEdgeKey ?? null,
+  );
+  const [focusRequest, setFocusRequest] = useState<{
+    id: string;
+    token: number;
+  } | null>(null);
+  const edgeKeys = useMemo(
+    () =>
+      new Map(
+        graph.edges.map((edge, index) => [edge, getEdgeKey(edge, index)]),
+      ),
+    [graph],
+  );
   const captureRef = useRef<
     ArchitectureViewerHandle['captureScreenshot'] | null
   >(null);
@@ -150,18 +177,57 @@ const ValidViewer = forwardRef<
   const resetLayout = useCallback(() => changePositions({}), [changePositions]);
   const candidate = selectedNodeId === undefined ? internalId : selectedNodeId;
   const selected = candidate ? (getNode(visible, candidate) ?? null) : null;
+  const edgeCandidate =
+    selectedEdgeKey === undefined ? internalEdgeKey : selectedEdgeKey;
+  const selectedEdge =
+    visible.edges.find((edge) => edgeKeys.get(edge) === edgeCandidate) ?? null;
+  const selectEdge = (edge: ArchitectureEdge | null) => {
+    const key = edge ? edgeKeys.get(edge)! : null;
+    if (selectedEdgeKey === undefined) setInternalEdgeKey(key);
+    onEdgeSelect?.(edge, key);
+    if (edge) {
+      if (selectedNodeId === undefined) setInternalId(null);
+      onNodeSelect?.(null);
+    }
+  };
+  const focusNode = (id: string) => {
+    if (!getNode(visible, id)) return false;
+    setFocusRequest((previous) => ({ id, token: (previous?.token ?? 0) + 1 }));
+    return true;
+  };
+  const resetCamera = () => {
+    setFocusRequest(null);
+    setReset((value) => value + 1);
+  };
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const searchResults = visible.nodes.filter(
+    (node) =>
+      !normalizedQuery ||
+      [
+        node.id,
+        node.label,
+        node.type,
+        node.description ?? '',
+        ...(node.tags ?? []),
+      ]
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(normalizedQuery),
+  );
   const select = (node: ArchitectureNode | null) => {
+    selectEdge(null);
     if (selectedNodeId === undefined) setInternalId(node?.id ?? null);
     onNodeSelect?.(node);
   };
   useImperativeHandle(
     ref,
     () => ({
-      resetCamera: () => setReset((value) => value + 1),
+      resetCamera,
+      focusNode,
       captureScreenshot,
       resetLayout,
     }),
-    [captureScreenshot, resetLayout],
+    [captureScreenshot, resetLayout, visible],
   );
   const detailsProps = {
     graph,
@@ -183,6 +249,11 @@ const ValidViewer = forwardRef<
           <GraphScene
             graph={visible}
             onCaptureReady={onCaptureReady}
+            focusRequest={focusRequest}
+            edgeKeys={edgeKeys}
+            selectedEdgeKey={selectedEdge ? edgeCandidate : null}
+            onEdgeSelect={selectEdge}
+            highlightedEdgeKeys={highlightedEdgeKeys}
             positions={positions}
             layoutPositions={layoutPositions}
             draggableNodes={draggableNodes}
@@ -207,6 +278,11 @@ const ValidViewer = forwardRef<
             {visible.nodes.length} nodes · {visible.edges.length} relationships
           </span>
           <div className="av-toolbar-actions">
+            {selected && (
+              <button type="button" onClick={() => focusNode(selected.id)}>
+                Focus node
+              </button>
+            )}
             {(draggableNodes || Object.keys(overrides).length > 0) && (
               <button type="button" onClick={resetLayout}>
                 Reset layout
@@ -221,10 +297,7 @@ const ValidViewer = forwardRef<
                 {capturing ? 'Exporting…' : 'Download PNG'}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setReset((value) => value + 1)}
-            >
+            <button type="button" onClick={resetCamera}>
               Reset camera
             </button>
           </div>
@@ -237,7 +310,19 @@ const ValidViewer = forwardRef<
         <details className="av-node-list">
           <summary>Browse nodes ({visible.nodes.length})</summary>
           <div>
-            {visible.nodes.map((node) => (
+            {showSearch && (
+              <input
+                type="search"
+                aria-label="Search nodes"
+                placeholder="Search nodes…"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            )}
+            {!!normalizedQuery && !searchResults.length && (
+              <p role="status">No matching nodes in this view.</p>
+            )}
+            {searchResults.map((node) => (
               <button
                 type="button"
                 key={node.id}
@@ -248,6 +333,21 @@ const ValidViewer = forwardRef<
               </button>
             ))}
           </div>
+          <details className="av-edge-list">
+            <summary>Relationships ({visible.edges.length})</summary>
+            {visible.edges.map((edge) => (
+              <button
+                type="button"
+                key={edgeKeys.get(edge)}
+                aria-pressed={selectedEdge === edge}
+                onClick={() => selectEdge(edge)}
+              >
+                {getNode(graph, edge.source)?.label} →{' '}
+                {getNode(graph, edge.target)?.label} ·{' '}
+                {edge.label ?? edge.type ?? 'relationship'}
+              </button>
+            ))}
+          </details>
         </details>
         <p className="av-controls-hint">
           {draggableNodes
@@ -256,7 +356,23 @@ const ValidViewer = forwardRef<
         </p>
       </div>
       {showDetailsPanel &&
-        (renderDetails ? (
+        (selectedEdge ? (
+          renderEdgeDetails ? (
+            renderEdgeDetails({
+              graph,
+              edge: selectedEdge,
+              onClear: () => selectEdge(null),
+              onNodeSelect: select,
+            })
+          ) : (
+            <DefaultEdgeDetailsPanel
+              graph={graph}
+              edge={selectedEdge}
+              onClear={() => selectEdge(null)}
+              onNodeSelect={select}
+            />
+          )
+        ) : renderDetails ? (
           renderDetails(detailsProps)
         ) : (
           <DefaultDetailsPanel

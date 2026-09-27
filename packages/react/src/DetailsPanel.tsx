@@ -15,7 +15,7 @@ function formatValue(value: unknown): string {
     return '[Unserializable value]';
   }
 }
-function Metadata({ value }: { value?: Record<string, unknown> }) {
+export function Metadata({ value }: { value?: Record<string, unknown> }) {
   return value && Object.keys(value).length > 0 ? (
     <dl className="av-metadata">
       {Object.entries(value).map(([key, item]) => (
