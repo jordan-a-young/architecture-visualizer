@@ -516,3 +516,47 @@ describe('saved views', () => {
     expect(() => ref.current!.getViewState()).toThrow('Predicate filters');
   });
 });
+
+describe('collapsible groups', () => {
+  const grouped: ArchitectureGraph = {
+    ...graph,
+    groups: [{ id: 'g', label: 'Services' }],
+    nodes: graph.nodes.map((node) => ({ ...node, group: 'g' })),
+  };
+  it('preserves positions and selection through collapse, expansion and saved views', () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={grouped}
+        defaultSelectedNodeId="a"
+        defaultNodePositions={{ a: [7, 0, 8] }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Services' }));
+    expect(screen.queryByText('scene:a')).not.toBeInTheDocument();
+    const saved = ref.current!.getViewState();
+    expect(saved.collapsedGroupIds).toEqual(['g']);
+    expect(saved.selectedNodeId).toBe('a');
+    fireEvent.click(screen.getByText('scene:group:g'));
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-selected', 'a');
+    expect(
+      JSON.parse(screen.getByTestId('scene').getAttribute('data-positions')!).a,
+    ).toEqual([7, 0, 8]);
+    act(() => ref.current!.restoreViewState(saved));
+    expect(screen.queryByText('scene:a')).not.toBeInTheDocument();
+  });
+  it('proposes controlled collapse without applying it when the host declines', () => {
+    const change = vi.fn();
+    render(
+      <ArchitectureViewer
+        graph={grouped}
+        collapsedGroupIds={[]}
+        onCollapsedGroupsChange={change}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Services' }));
+    expect(change).toHaveBeenCalledWith(['g']);
+    expect(screen.getByText('scene:a')).toBeInTheDocument();
+  });
+});

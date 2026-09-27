@@ -8,6 +8,7 @@ export interface CameraState {
 export type SerializableGraphFilters = Omit<GraphFilterOptions, 'predicate'>;
 export interface ViewerViewState {
   version: 1;
+  collapsedGroupIds: readonly string[];
   camera: CameraState | null;
   nodePositions: NodePositions;
   filters: SerializableGraphFilters;
@@ -48,6 +49,7 @@ export function parseViewState(input: unknown): ViewerViewState {
   const value = object(input);
   keys(value, [
     'version',
+    'collapsedGroupIds',
     'camera',
     'nodePositions',
     'filters',
@@ -84,6 +86,10 @@ export function parseViewState(input: unknown): ViewerViewState {
   }
   return {
     version: 1,
+    collapsedGroupIds:
+      value.collapsedGroupIds === undefined
+        ? []
+        : strings(value.collapsedGroupIds),
     camera,
     filters,
     walkthrough,

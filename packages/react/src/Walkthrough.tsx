@@ -84,7 +84,8 @@ export function Walkthrough({
       </div>
       {!currentVisible && (
         <p role="status">
-          Current step is hidden by the view. Go back or adjust filters.
+          Current step is hidden by the view. Go back or adjust filters or
+          expand groups.
         </p>
       )}
       {currentVisible && !outgoing.length && (

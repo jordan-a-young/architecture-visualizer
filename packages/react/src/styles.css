@@ -430,3 +430,11 @@
     right: 12px;
   }
 }
+
+.av-group-list {
+  border-bottom: 1px solid #e0e6ed;
+  padding: 6px 0;
+}
+.av-group-list small {
+  color: #78899e;
+}
