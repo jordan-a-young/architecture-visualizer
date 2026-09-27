@@ -60,7 +60,7 @@ try {
   write(
     'src/main.tsx',
     `import { createRoot } from 'react-dom/client';
-import { ArchitectureViewer } from 'archgraph-react';
+import { ArchitectureViewer, getEdgeKey } from 'archgraph-react';
 import type { ArchitectureViewerHandle, LayoutFunction, NodeRendererProps, NodePositions } from 'archgraph-react';
 import { validateGraph } from 'archgraph-core';
 import type { ArchitectureGraph } from 'archgraph-core';
@@ -68,7 +68,8 @@ import 'archgraph-react/styles.css';
 const graph: ArchitectureGraph = { version: '1.0', nodes: [{id:'a',label:'A',type:'custom'}], edges:[], groups:[] };
 const layout: LayoutFunction = graph => new Map(graph.nodes.map(n => [n.id, [0, 0, 0]]));
 function Custom({ color }: NodeRendererProps) { return <mesh><boxGeometry/><meshBasicMaterial color={color}/></mesh>; }
-const ref = (viewer: ArchitectureViewerHandle | null) => viewer?.resetCamera();
+const ref = (viewer: ArchitectureViewerHandle | null) => { viewer?.resetCamera(); viewer?.focusNode('a'); };
+export const edgeKey = getEdgeKey({source:'a',target:'a'}, 0);
 export const resetLayout = (viewer: ArchitectureViewerHandle) => viewer.resetLayout();
 const positions: NodePositions = { a: [1, 0, 2] };
 export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
