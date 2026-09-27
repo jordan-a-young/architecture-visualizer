@@ -241,3 +241,7 @@ MIT. npm publication requires owner approval; see the publishing checklist.
 Browse nodes supports search without hiding the graph. Select a node and use Focus node to center it. Click a relationship line/label or use the Relationships list to inspect its direction and metadata. These controls remain compatible with external filters, custom rendering, controlled selection, and the keyboard inspector. See the [React guide](packages/react/README.md#search-focus-and-relationships) for APIs and edge-key behavior.
 
 Select a node and start a **Connection walkthrough** to explore outgoing relationships with Next, branch choices, Previous, and visit breadcrumbs. The path supports cycles and highlights the relationships you followed. It represents your chosen route through the supplied graph; it does not infer or execute a request. See the [walkthrough API](packages/react/README.md#connection-walkthrough).
+
+## Saved views
+
+The demo can save named views in the current browser, restore them after reload, or delete them. Views include camera, manual positions, filters, selection, and walkthrough state. Applications can use `ref.getViewState()`, `ref.restoreViewState()`, and `parseViewState()` with their own storage. Persistence stays outside the library. See the [saved-view contract and limitations](packages/react/README.md#saved-view-state).
