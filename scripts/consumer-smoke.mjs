@@ -61,7 +61,7 @@ try {
     'src/main.tsx',
     `import { createRoot } from 'react-dom/client';
 import { ArchitectureViewer, getEdgeKey } from 'archgraph-react';
-import type { ArchitectureViewerHandle, LayoutFunction, NodeRendererProps, NodePositions } from 'archgraph-react';
+import type { ArchitectureViewerHandle, LayoutFunction, NodeRendererProps, NodePositions, WalkthroughState } from 'archgraph-react';
 import { validateGraph } from 'archgraph-core';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -71,6 +71,7 @@ function Custom({ color }: NodeRendererProps) { return <mesh><boxGeometry/><mesh
 const ref = (viewer: ArchitectureViewerHandle | null) => { viewer?.resetCamera(); viewer?.focusNode('a'); };
 export const edgeKey = getEdgeKey({source:'a',target:'a'}, 0);
 export const resetLayout = (viewer: ArchitectureViewerHandle) => viewer.resetLayout();
+export const walkthrough: WalkthroughState = { startNodeId: 'a', edgeKeys: [] };
 const positions: NodePositions = { a: [1, 0, 2] };
 export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
 if (!validateGraph(graph).valid) throw new Error('Unexpected invalid fixture');
