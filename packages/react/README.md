@@ -70,3 +70,13 @@ Select a node and choose **Start walkthrough**. **Next** follows a single outgoi
 `walkthrough?: WalkthroughState | null`, `defaultWalkthrough`, and `onWalkthroughChange` support controlled/internal state. A state is `{ startNodeId, edgeKeys }`, using `getEdgeKey` from the full graph. While active, the walkthrough determines the inspected node and highlights its path. It does not change the camera automatically. Clicking another node/edge proposes ending it; controlled hosts must accept that proposal. `showWalkthrough={false}` hides the controls so hosts can supply their own navigation.
 
 Filtered targets are disabled rather than silently revealing hidden data. A hidden current step can be revisited with Previous. After graph changes the viewer displays only the longest valid prefix without synthetic callbacks; missing start nodes hide the walkthrough. Use explicit edge IDs for paths that must survive graph reorder. No discovery or additional flow schema is involved.
+
+## Saved view state
+
+`ref.getViewState(): ViewerViewState` returns a detached, JSON-serializable snapshot of camera position/target, manual node positions, filters, selection, and walkthrough. `ref.restoreViewState(unknown)` validates the complete versioned snapshot before making changes. `parseViewState(unknown)` is exported for validating stored data. Camera is `null` before WebGL is ready or when unavailable; other view fields remain usable. Capture once the scene is ready to include its camera.
+
+Persistence belongs to the consuming application. The package does not read or write localStorage, files, URLs, or a backend. The demo provides named browser-local views with explicit save/restore/delete actions.
+
+Filters now support `defaultFilters` and `onFiltersChange` as well as controlled `filters`. Restoring proposes updates for controlled filters, positions, node/edge selection, and walkthrough; the host must apply their callbacks. Uncontrolled fields update internally. Camera restoration is imperative. A snapshot is not a transaction across host callbacks: hosts should apply their proposals together. Invalid snapshots change nothing.
+
+Predicate filters cannot be serialized: capture rejects them with a clear error instead of dropping their meaning. Custom layout functions/renderers, graph data, transient highlighting, search text, and label visibility are not saved; supply the same graph and layout when restoring. Missing node/edge references and removed position overrides are discarded; walkthroughs retain their valid prefix. Camera tuples must be finite, with at least 3 units between position and target. Use explicit edge IDs for saved edge selection and paths across graph reorder.
