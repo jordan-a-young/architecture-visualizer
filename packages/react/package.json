@@ -20,7 +20,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./elk": {
+      "types": "./dist/elk.d.ts",
+      "import": "./dist/elk.js"
+    }
   },
   "name": "archgraph-react",
   "description": "Composable 3D React architecture viewer for normalized graphs.",
@@ -30,23 +34,25 @@
     "prepack": "pnpm build"
   },
   "dependencies": {
-    "archgraph-core": "workspace:^",
-    "@react-three/drei": "^10.7.7"
+    "@react-three/drei": "^10.7.7",
+    "archgraph-core": "workspace:^"
   },
   "peerDependencies": {
+    "@react-three/fiber": "^9.4.0",
     "react": ">=19.0.0 <19.3.0",
     "react-dom": ">=19.0.0 <19.3.0",
     "three": ">=0.170.0 <0.184.0",
-    "@react-three/fiber": "^9.4.0"
+    "elkjs": "^0.11.1"
   },
   "devDependencies": {
-    "react": "~19.2.0",
-    "react-dom": "~19.2.0",
-    "three": "~0.182.0",
     "@react-three/fiber": "^9.4.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/three": "~0.182.0",
+    "elkjs": "0.11.1",
+    "react": "~19.2.0",
+    "react-dom": "~19.2.0",
+    "three": "~0.182.0",
     "vite": "^7.2.2"
   },
   "repository": {
@@ -57,5 +63,10 @@
   "homepage": "https://github.com/jordan-a-young/architecture-visualizer#readme",
   "bugs": {
     "url": "https://github.com/jordan-a-young/architecture-visualizer/issues"
+  },
+  "peerDependenciesMeta": {
+    "elkjs": {
+      "optional": true
+    }
   }
 }

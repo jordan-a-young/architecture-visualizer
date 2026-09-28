@@ -2,9 +2,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/index.ts',
+      entry: { index: 'src/index.ts', elk: 'src/elk.ts' },
       formats: ['es'],
-      fileName: 'index',
+      fileName: (_format, entryName) => `${entryName}.js`,
       cssFileName: 'styles',
     },
     sourcemap: true,

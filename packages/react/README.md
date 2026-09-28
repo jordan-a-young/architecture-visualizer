@@ -99,3 +99,21 @@ Collapse projects visible group members into a neutral summary at their average 
 Summary clicks expand the group without selecting a synthetic architecture node. Summaries use built-in geometry and cannot be dragged. Original manual positions and selection survive collapse/expand. Hidden nodes cannot be focused or visited by Next until their group expands. Hiding the current step also hides any pending branch choices. The edge inspector disables hidden endpoints until their groups expand; custom edge panels receive `visibleNodeIds` to apply the same rule. The graph schema, node renderer callbacks, edge callbacks and custom details panels continue to use original architecture data. There are no provider-specific grouping rules or automatic discovery.
 
 Saved views include `collapsedGroupIds`; older version-1 snapshots without this field restore with all groups expanded. The library performs no persistence or network requests.
+
+## Optional advanced layout
+
+Install `elkjs@^0.11.1` and import the adapter from `archgraph-react/elk`. Keep the engine reference stable (for example with `useMemo`):
+
+```tsx
+import { createElkLayout } from 'archgraph-react/elk';
+const layout = useMemo(() => createElkLayout({ direction: 'RIGHT' }), []);
+<ArchitectureViewer graph={graph} layout={layout} />;
+```
+
+ELK reorders layers to reduce crossings, respects nested groups, and computes orthogonal edge paths. Cycles, self-loops and parallel relationships remain valid. It receives a new, provider-independent geometry graph; input architecture data is never mutated. Stable input ordering and a fixed seed give repeatable layouts for a fixed engine version. Zero crossings cannot be guaranteed for every graph or camera angle.
+
+Options are `direction` (`RIGHT` or `DOWN`), `spacing` (default 3 world units), `layerSpacing` (5), `respectGroups` (true), and `nodeSize(node)` returning a positive `{ width, depth }` footprint in the horizontal plane. Custom geometry larger than the defaults should supply its footprint. Footprints reserve geometry space; camera-dependent HTML label dimensions are not measured by the engine.
+
+Existing synchronous `LayoutFunction` callbacks and `computeLayout` still return position maps. A new `LayoutEngine.compute(graph)` may return or resolve `LayoutGeometry`: `positions`, optional `nodeSizes`, and optional `edgePaths` keyed by `getEdgeKey`. `validateLayoutGeometry` checks finite coordinates, positive sizes and valid paths. The viewer shows a basic layout while waiting or on failure and ignores stale results after graph/engine changes. Manual position overrides survive layout completion. Filters continue to hide nodes without recomputing the layout.
+
+The optional subpath is externalized and ELK is an optional peer; the main viewer entry does not import it. ELK is distributed under its own EPL-2.0 license. The default adapter uses its bundled local implementation, with no asset downloads or provider access. The Promise API does not itself move work off the UI thread. For large graphs, provide a host-owned `runner: { layout(graph): Promise<ElkNode> }` backed by a locally bundled worker; the host owns its lifetime. Custom functions/engine configuration are not serialized in saved views.
