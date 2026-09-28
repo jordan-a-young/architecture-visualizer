@@ -249,3 +249,7 @@ The demo can save named views in the current browser, restore them after reload,
 ## Collapsible groups
 
 Open Browse nodes → Groups to collapse a group into a labeled summary. Nested groups retain their own state, and boundary edges still inspect the original relationship. Expand by clicking a summary or using the list. Manual positions survive collapse/expand, and saved views include collapsed groups. No group meaning or provider semantics are assumed. See the React guide for controlled state and filtering behavior.
+
+## Advanced layouts
+
+The optional `archgraph-react/elk` adapter uses ELK to reduce crossings, position nested groups, and calculate orthogonal routes. Install the optional `elkjs` peer and pass a stable `createElkLayout()` result to the viewer's `layout` prop. The built-in layered layout and existing custom layout functions remain available without ELK. Layout computation stays local and provider-independent. See [the React layout API](packages/react/README.md#optional-advanced-layout) for options, asynchronous behavior and dependency decisions.
