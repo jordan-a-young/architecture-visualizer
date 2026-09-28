@@ -29,7 +29,9 @@ try {
     type: 'module',
     packageManager: 'pnpm@11.19.0',
     dependencies: {
-      ...demo.dependencies,
+      ...Object.fromEntries(
+        Object.entries(demo.dependencies).filter(([name]) => name !== 'elkjs'),
+      ),
       'archgraph-core': core,
       'archgraph-react': react,
     },
@@ -94,6 +96,21 @@ createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref
     ],
     { cwd: directory, stdio: 'inherit' },
   );
+  run(['add', 'elkjs@0.11.1']);
+  write(
+    'src/optional.ts',
+    `import { createElkLayout } from 'archgraph-react/elk';
+export const engine = createElkLayout({ direction: 'DOWN', nodeSize: () => ({width:2,depth:2}) });
+`,
+  );
+  const main = readFileSync(join(directory, 'src/main.tsx'), 'utf8');
+  write(
+    'src/main.tsx',
+    `import {engine} from './optional';\n` +
+      main.replace('layout={layout}', 'layout={engine}'),
+  );
+  run(['exec', 'tsc']);
+  run(['exec', 'vite', 'build']);
   log(
     'Standalone tarball consumer: TypeScript, Vite build, and Node ESM import passed.',
   );
