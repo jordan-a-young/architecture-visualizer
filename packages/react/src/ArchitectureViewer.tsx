@@ -16,6 +16,8 @@ import type {
   ArchitectureEdge,
 } from 'archgraph-core';
 import { projectGroups } from './groups.js';
+import { routeEdges } from './routing.js';
+import { getGroupBoundaries } from './groupBounds.js';
 import { useLayout } from './useLayout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
@@ -81,6 +83,9 @@ const ValidViewer = forwardRef<
     defaultCollapsedGroupIds = [],
     onCollapsedGroupsChange,
     layout = 'layered',
+    edgeRouting = 'auto',
+    showGroupBoundaries = true,
+    groupStyle,
     draggableNodes = false,
     nodePositions,
     defaultNodePositions = {},
@@ -227,11 +232,53 @@ const ValidViewer = forwardRef<
   );
   const visible = projection.graph;
   const positions = projection.positions;
-  const sceneEdgeKeys = new Map(
-    visible.edges.map((edge) => [
-      edge,
-      edgeKeys.get(projection.originals.get(edge)!)!,
-    ]),
+  const sceneEdgeKeys = useMemo(
+    () =>
+      new Map(
+        visible.edges.map((edge) => [
+          edge,
+          edgeKeys.get(projection.originals.get(edge)!)!,
+        ]),
+      ),
+    [visible, edgeKeys, projection],
+  );
+  const edgePaths = useMemo(
+    () =>
+      edgeRouting === 'orthogonal' ||
+      (edgeRouting === 'auto' && computedLayout.geometry.edgePaths)
+        ? routeEdges(visible, positions, {
+            nodeSizes: computedLayout.geometry.nodeSizes,
+            edgeKeys: sceneEdgeKeys,
+            preferredPaths: computedLayout.geometry.edgePaths,
+            basePositions,
+          })
+        : undefined,
+    [
+      edgeRouting,
+      computedLayout.geometry,
+      visible,
+      positions,
+      sceneEdgeKeys,
+      basePositions,
+    ],
+  );
+  const groupBoundaries = useMemo(
+    () =>
+      showGroupBoundaries
+        ? getGroupBoundaries(
+            visible,
+            positions,
+            projection.proxies,
+            computedLayout.geometry.nodeSizes,
+          )
+        : [],
+    [
+      showGroupBoundaries,
+      visible,
+      positions,
+      projection.proxies,
+      computedLayout.geometry,
+    ],
   );
   const changePositions = useCallback(
     (next: NodePositions) => {
@@ -394,6 +441,10 @@ const ValidViewer = forwardRef<
         <SceneBoundary key={reset}>
           <GraphScene
             graph={visible}
+            edgePaths={edgePaths}
+            groupBoundaries={groupBoundaries}
+            groupStyle={groupStyle}
+            onCollapseGroup={(id) => changeCollapsed([...collapsed, id])}
             onCaptureReady={onCaptureReady}
             focusRequest={focusRequest}
             onCameraReady={onCameraReady}

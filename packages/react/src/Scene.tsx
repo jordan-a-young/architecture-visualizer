@@ -11,6 +11,9 @@ import type {
 import { getNeighbors } from 'archgraph-core';
 import type { LayoutResult, Position3 } from './layout.js';
 import type { ArchitectureViewerProps } from './types.js';
+import { LabelPlacement } from './LabelPlacement.js';
+import { GroupBoundaries } from './GroupBoundaries.js';
+import type { GroupBoundary } from './groupBounds.js';
 import { InteractiveNode } from './InteractiveNode.js';
 import { GraphEdge } from './Edge.js';
 import { captureViewport } from './screenshot.js';
@@ -44,6 +47,7 @@ function CaptureBridge({
 function CameraRig({
   positions,
   layoutPositions,
+  bounds,
   reset,
   focusRequest,
   onCameraReady,
@@ -51,6 +55,7 @@ function CameraRig({
 }: {
   positions: LayoutResult;
   layoutPositions: LayoutResult;
+  bounds: readonly Position3[];
   reset: number;
   focusRequest?: { id: string; token: number } | null;
   onCameraReady?: (reader: (() => CameraState) | null) => void;
@@ -60,11 +65,13 @@ function CameraRig({
   const { camera, size, invalidate } = useThree();
   const latestPositions = useRef(positions);
   latestPositions.current = positions;
+  const latestBounds = useRef(bounds);
+  latestBounds.current = bounds;
   const framingKey = JSON.stringify([...layoutPositions]);
   useEffect(() => {
     const positions = latestPositions.current;
     const box = new Box3();
-    for (const position of positions.values())
+    for (const position of latestBounds.current)
       box.expandByPoint(new Vector3(...position));
     const center = positions.size
       ? box.getCenter(new Vector3())
@@ -146,6 +153,10 @@ function CameraRig({
   );
 }
 export interface GraphSceneProps {
+  edgePaths?: ReadonlyMap<string, readonly Position3[]>;
+  groupBoundaries?: readonly GroupBoundary[];
+  groupStyle?: ArchitectureViewerProps['groupStyle'];
+  onCollapseGroup?: (id: string) => void;
   onCaptureReady?: (
     capture: ArchitectureViewerHandle['captureScreenshot'] | null,
   ) => void;
@@ -174,6 +185,10 @@ export interface GraphSceneProps {
 }
 function SupportedScene({
   graph,
+  edgePaths,
+  groupBoundaries = [],
+  groupStyle,
+  onCollapseGroup,
   groupSummaries,
   positions,
   selectedId,
@@ -247,6 +262,17 @@ function SupportedScene({
       <directionalLight position={[8, 15, 10]} intensity={2} />
       <CameraRig
         positions={positions}
+        bounds={[
+          ...positions.values(),
+          ...[...(edgePaths?.values() ?? [])].flat(),
+          ...groupBoundaries.flatMap(
+            (b) =>
+              [
+                [b.minX, b.floor, b.minZ],
+                [b.maxX, b.floor, b.maxZ],
+              ] as Position3[],
+          ),
+        ]}
         layoutPositions={layoutPositions}
         reset={reset}
         focusRequest={focusRequest}
@@ -258,6 +284,11 @@ function SupportedScene({
         args={[100, 50, '#dce1e7', '#e8ecf0']}
         position={[0, -0.8, 0]}
         raycast={() => null}
+      />
+      <GroupBoundaries
+        boundaries={groupBoundaries}
+        groupStyle={groupStyle}
+        onCollapse={(id) => onCollapseGroup?.(id)}
       />
       {graph.edges.map((edge, i) => {
         const siblings = parallel.get(
@@ -273,6 +304,7 @@ function SupportedScene({
           <GraphEdge
             key={edge.id ?? `edge-${i}`}
             edge={edge}
+            route={edgePaths?.get(edgeKeys.get(edge)!)}
             edgeKey={edgeKeys.get(edge)!}
             onSelect={() => onEdgeSelect(edge)}
             start={positions.get(edge.source)!}
@@ -314,6 +346,7 @@ function SupportedScene({
           />
         );
       })}
+      <LabelPlacement />
     </Canvas>
   );
 }

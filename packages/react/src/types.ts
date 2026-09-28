@@ -3,6 +3,7 @@ import type {
   ArchitectureEdge,
   ArchitectureGraph,
   ArchitectureNode,
+  ArchitectureGroup,
   GraphFilterOptions,
 } from 'archgraph-core';
 import type { ViewerViewState } from './viewState.js';
@@ -19,6 +20,10 @@ export interface NodeRendererProps {
 export type NodeRendererRegistry = Readonly<
   Record<string, ComponentType<NodeRendererProps>>
 >;
+export interface GroupStyle {
+  color?: string;
+  fillOpacity?: number;
+}
 export interface EdgeStyle {
   color?: string;
   width?: number;
@@ -70,6 +75,10 @@ export interface ArchitectureViewerProps {
   defaultCollapsedGroupIds?: readonly string[];
   onCollapsedGroupsChange?: (ids: readonly string[]) => void;
   layout?: Layout;
+  /** auto uses engine paths when available; orthogonal also routes manual layouts. */
+  edgeRouting?: 'auto' | 'curved' | 'orthogonal';
+  showGroupBoundaries?: boolean;
+  groupStyle?: (group: ArchitectureGroup) => GroupStyle;
   /** Opt in to moving nodes on the horizontal plane at their current height. */
   draggableNodes?: boolean;
   /** Controlled manual position overrides, keyed by node ID. */
