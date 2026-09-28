@@ -230,7 +230,7 @@ ESM and TypeScript declarations are exported; no CommonJS build is claimed. CSS 
 
 ## V1 limits and next steps
 
-This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. Layout is simple and not crossing-minimized; dense graphs can overlap labels. Benchmark larger graphs before setting scale guarantees. Nested group enclosures, SCC-aware layout, and virtualized labels remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
+This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. The built-in layout is simple; the optional ELK adapter reduces crossings and respects nested groups. Expanded groups have visual boundaries. Dense graphs can still overlap labels, and crossing counts depend on the camera. Benchmark larger graphs before setting scale guarantees. Virtualized labels and richer layout constraints remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
 
 ## License
 
@@ -259,3 +259,5 @@ The optional `archgraph-react/elk` adapter uses ELK to reduce crossings, positio
 Existing groups can describe nodes deployed together: for example `groups: [{ id: 'checkout', label: 'Checkout deployment' }]` and `group: 'checkout'` on its nodes. Expanded groups render labeled, lightly shaded boundaries; `parent` supports nesting. Click a boundary label to collapse it. Boundaries follow dragging and filters and appear in screenshots. The library does not infer deployment membership. Customize with `showGroupBoundaries` and `groupStyle`.
 
 Advanced layouts supply rounded orthogonal routes with attachment points and obstacle avoidance. Set `edgeRouting="orthogonal"` to enable routing with a custom position-only layout, or `"curved"` for the original appearance. Moved nodes and collapsed groups retain inspectable original relationships. See [the React documentation](packages/react/README.md#relationship-routing) for routing limits and extension points.
+
+The demo now shows nested deployment groups and offers advanced/basic layout, direction, spacing, and boundary visibility controls. **Top view** makes route crossings easier to assess; **Arrange visible** explicitly compacts the filtered graph while keeping manual overrides. Resulting positions are saved with the view. **Reset layout** releases these overrides; **Reset camera** returns to the angled overview.
