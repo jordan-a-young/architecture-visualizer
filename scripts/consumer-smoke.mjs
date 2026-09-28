@@ -70,16 +70,17 @@ import 'archgraph-react/styles.css';
 const graph: ArchitectureGraph = { version: '1.0', nodes: [{id:'a',label:'A',type:'custom'}], edges:[], groups:[] };
 const layout: LayoutFunction = graph => new Map(graph.nodes.map(n => [n.id, [0, 0, 0]]));
 function Custom({ color }: NodeRendererProps) { return <mesh><boxGeometry/><meshBasicMaterial color={color}/></mesh>; }
-const ref = (viewer: ArchitectureViewerHandle | null) => { viewer?.resetCamera(); viewer?.focusNode('a'); };
+const ref = (viewer: ArchitectureViewerHandle | null) => { viewer?.resetCamera(); viewer?.setCameraPreset('top'); viewer?.focusNode('a'); };
 export const edgeKey = getEdgeKey({source:'a',target:'a'}, 0);
 export const captureView = (viewer: ArchitectureViewerHandle): ViewerViewState => parseViewState(viewer.getViewState());
 export const restoreView = (viewer: ArchitectureViewerHandle, state: unknown) => viewer.restoreViewState(state);
+export const arrangeVisible = (viewer: ArchitectureViewerHandle) => viewer.arrangeVisibleGraph();
 export const resetLayout = (viewer: ArchitectureViewerHandle) => viewer.resetLayout();
 export const walkthrough: WalkthroughState = { startNodeId: 'a', edgeKeys: [] };
 const positions: NodePositions = { a: [1, 0, 2] };
 export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
 if (!validateGraph(graph).valid) throw new Error('Unexpected invalid fixture');
-createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} collapsedGroupIds={[]} onCollapsedGroupsChange={ids => { void ids; }} nodeRenderers={{ custom: Custom }} draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
+createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} collapsedGroupIds={[]} onCollapsedGroupsChange={ids => { void ids; }} nodeRenderers={{ custom: Custom }} showGroupBoundaries groupStyle={() => ({color:"#445566",fillOpacity:0.06})} edgeRouting="orthogonal" draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
 `,
   );
   const run = (args) =>
