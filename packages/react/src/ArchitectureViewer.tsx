@@ -18,6 +18,7 @@ import type {
 import { projectGroups } from './groups.js';
 import { routeEdges } from './routing.js';
 import { getGroupBoundaries } from './groupBounds.js';
+import { computeLayout, validateLayoutGeometry } from './layout.js';
 import { useLayout } from './useLayout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
@@ -32,6 +33,7 @@ import { DefaultEdgeDetailsPanel } from './EdgeDetailsPanel.js';
 import { DefaultDetailsPanel } from './DetailsPanel.js';
 import { downloadScreenshot } from './screenshot.js';
 import { retainNodePositions, resolveNodePositions } from './positions.js';
+import type { CameraPreset } from './types.js';
 import type { NodePositions } from './types.js';
 import type { Position3 } from './layout.js';
 import type {
@@ -107,6 +109,16 @@ const ValidViewer = forwardRef<
     defaultSelectedNodeId ?? null,
   );
   const [reset, setReset] = useState(0);
+  const [cameraPreset, setPreset] = useState<CameraPreset>('perspective');
+  const [arranging, setArranging] = useState(false);
+  const [arrangeError, setArrangeError] = useState<string | null>(null);
+  const arrangeSequence = useRef(0);
+  useEffect(
+    () => () => {
+      arrangeSequence.current++;
+    },
+    [],
+  );
   const [internalFilters, setInternalFilters] =
     useState<GraphFilterOptions>(defaultFilters);
   const effectiveFilters = filters === undefined ? internalFilters : filters;
@@ -318,9 +330,55 @@ const ValidViewer = forwardRef<
     return true;
   };
   const resetCamera = () => {
+    setPreset('perspective');
     setCameraRequest(null);
     setFocusRequest(null);
     setReset((value) => value + 1);
+  };
+  const setCameraPreset = (preset: CameraPreset) => {
+    setPreset(preset);
+    setCameraRequest(null);
+    setFocusRequest(null);
+    setReset((value) => value + 1);
+  };
+  const arrangementContext = useRef({ graph, filtered, layout, overrides });
+  arrangementContext.current = { graph, filtered, layout, overrides };
+  const arrangeVisibleGraph = async () => {
+    const sequence = ++arrangeSequence.current;
+    const context = arrangementContext.current;
+    setArranging(true);
+    setArrangeError(null);
+    try {
+      const geometry = validateLayoutGeometry(
+        filtered,
+        typeof layout === 'object'
+          ? await layout.compute(filtered)
+          : { positions: computeLayout(filtered, layout) },
+      );
+      const latest = arrangementContext.current;
+      if (
+        sequence !== arrangeSequence.current ||
+        latest.graph !== context.graph ||
+        latest.filtered !== context.filtered ||
+        latest.layout !== context.layout ||
+        latest.overrides !== context.overrides
+      )
+        return;
+      changePositions({
+        ...Object.fromEntries(
+          [...geometry.positions].map(([id, p]) => [id, [...p] as Position3]),
+        ),
+        ...overrides,
+      });
+    } catch (error) {
+      if (sequence === arrangeSequence.current)
+        setArrangeError(
+          error instanceof Error ? error.message : 'Arrangement failed.',
+        );
+      throw error;
+    } finally {
+      if (sequence === arrangeSequence.current) setArranging(false);
+    }
   };
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const searchResults = visible.nodes.filter(
@@ -406,6 +464,8 @@ const ValidViewer = forwardRef<
   };
   useImperativeHandle(ref, () => ({
     resetCamera,
+    setCameraPreset,
+    arrangeVisibleGraph,
     focusNode,
     getViewState,
     restoreViewState,
@@ -441,6 +501,7 @@ const ValidViewer = forwardRef<
         <SceneBoundary key={reset}>
           <GraphScene
             graph={visible}
+            cameraPreset={cameraPreset}
             edgePaths={edgePaths}
             groupBoundaries={groupBoundaries}
             groupStyle={groupStyle}
@@ -496,6 +557,20 @@ const ValidViewer = forwardRef<
             {visible.nodes.length} nodes · {visible.edges.length} relationships
           </span>
           <div className="av-toolbar-actions">
+            <button
+              type="button"
+              disabled={
+                arranging || computedLayout.pending || !filtered.nodes.length
+              }
+              onClick={() => {
+                void arrangeVisibleGraph().catch(() => undefined);
+              }}
+            >
+              {arranging ? 'Arranging…' : 'Arrange visible'}
+            </button>
+            <button type="button" onClick={() => setCameraPreset('top')}>
+              Top view
+            </button>
             {showWalkthrough && selected && !path && (
               <button
                 type="button"
@@ -531,6 +606,11 @@ const ValidViewer = forwardRef<
             </button>
           </div>
         </div>
+        {arrangeError && (
+          <p role="alert" className="av-layout-status">
+            Arrangement failed: {arrangeError}
+          </p>
+        )}
         {captureError && (
           <p role="alert" className="av-export-error">
             {captureError}

@@ -18,6 +18,7 @@ import { InteractiveNode } from './InteractiveNode.js';
 import { GraphEdge } from './Edge.js';
 import { captureViewport } from './screenshot.js';
 import type { CameraState } from './viewState.js';
+import type { CameraPreset } from './types.js';
 import type { ArchitectureViewerHandle } from './types.js';
 
 function CaptureBridge({
@@ -48,6 +49,7 @@ function CameraRig({
   positions,
   layoutPositions,
   bounds,
+  preset,
   reset,
   focusRequest,
   onCameraReady,
@@ -56,6 +58,7 @@ function CameraRig({
   positions: LayoutResult;
   layoutPositions: LayoutResult;
   bounds: readonly Position3[];
+  preset: CameraPreset;
   reset: number;
   focusRequest?: { id: string; token: number } | null;
   onCameraReady?: (reader: (() => CameraState) | null) => void;
@@ -84,7 +87,10 @@ function CameraRig({
       camera instanceof PerspectiveCamera
         ? (camera.fov * Math.PI) / 180
         : Math.PI / 4;
-    const direction = new Vector3(0, 1.3, 1).normalize();
+    const direction =
+      preset === 'top'
+        ? new Vector3(0, 1, 0.001).normalize()
+        : new Vector3(0, 1.3, 1).normalize();
     const tangent = Math.tan(fov / 2);
     const projectedHeight = extent.y * direction.z + extent.z * direction.y;
     const depth = extent.y * direction.y + extent.z * direction.z;
@@ -106,7 +112,7 @@ function CameraRig({
       controls.current.update();
     }
     invalidate();
-  }, [framingKey, reset, camera, size.width, size.height, invalidate]);
+  }, [framingKey, reset, preset, camera, size.width, size.height, invalidate]);
   useEffect(() => {
     if (!focusRequest) return;
     const position = latestPositions.current.get(focusRequest.id);
@@ -153,6 +159,7 @@ function CameraRig({
   );
 }
 export interface GraphSceneProps {
+  cameraPreset?: CameraPreset;
   edgePaths?: ReadonlyMap<string, readonly Position3[]>;
   groupBoundaries?: readonly GroupBoundary[];
   groupStyle?: ArchitectureViewerProps['groupStyle'];
@@ -185,6 +192,7 @@ export interface GraphSceneProps {
 }
 function SupportedScene({
   graph,
+  cameraPreset = 'perspective',
   edgePaths,
   groupBoundaries = [],
   groupStyle,
@@ -261,6 +269,7 @@ function SupportedScene({
       <ambientLight intensity={1.5} />
       <directionalLight position={[8, 15, 10]} intensity={2} />
       <CameraRig
+        preset={cameraPreset}
         positions={positions}
         bounds={[
           ...positions.values(),

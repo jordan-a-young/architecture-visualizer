@@ -455,6 +455,7 @@
 }
 
 .av-group-label {
+  transform: translateX(var(--av-group-label-x, 0px));
   background: #f5f7fa;
   border: 1px solid currentColor;
   border-radius: 4px;
