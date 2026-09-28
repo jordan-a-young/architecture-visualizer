@@ -1,6 +1,7 @@
 // Development-only browser fixture. Not an entry point in the production build.
 import { StrictMode, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createElkLayout } from 'archgraph-react/elk';
 import { ArchitectureViewer } from 'archgraph-react';
 import type {
   ArchitectureViewerHandle,
@@ -12,6 +13,7 @@ import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
 import { SavedViews } from './SavedViews';
 
+const advancedLayout = createElkLayout();
 const graph: ArchitectureGraph = {
   version: '1.0',
   groups: [],
@@ -108,6 +110,16 @@ function Fixture() {
       <div style={{ height: 640, width: '100%' }}>
         <ArchitectureViewer
           ref={viewer}
+          layout={
+            new URLSearchParams(location.search).has('layout')
+              ? advancedLayout
+              : 'layered'
+          }
+          edgeRouting={
+            new URLSearchParams(location.search).has('routes')
+              ? 'orthogonal'
+              : 'auto'
+          }
           graph={
             new URLSearchParams(location.search).has('groups')
               ? groupedGraph
