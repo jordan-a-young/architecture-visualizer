@@ -126,7 +126,9 @@ test('no WebGL preserves the keyboard-accessible inspector', async ({
     } as typeof original;
   });
   await page.goto('/');
-  await expect(page.getByRole('status')).toContainText('requires WebGL2');
+  await expect(
+    page.getByRole('status').filter({ hasText: 'requires WebGL2' }),
+  ).toBeVisible();
   await page.getByText('Browse nodes (10)').click();
   await page
     .locator('.av-node-list')
