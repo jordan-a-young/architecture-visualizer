@@ -16,7 +16,7 @@ import type {
   ArchitectureEdge,
 } from 'archgraph-core';
 import { projectGroups } from './groups.js';
-import { computeLayout } from './layout.js';
+import { useLayout } from './useLayout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
 import { parseViewState } from './viewState.js';
@@ -202,10 +202,8 @@ const ValidViewer = forwardRef<
     [graph, nodePositions, internalPositions],
   );
   // Lay out the whole graph: filtering changes visibility, not saved coordinates.
-  const basePositions = useMemo(
-    () => computeLayout(graph, layout),
-    [graph, layout],
-  );
+  const computedLayout = useLayout(graph, layout);
+  const basePositions = computedLayout.geometry.positions;
   const layoutPositions = useMemo(
     () =>
       new Map(
@@ -383,6 +381,16 @@ const ValidViewer = forwardRef<
       }}
     >
       <div className="av-viewport">
+        {computedLayout.pending && (
+          <p role="status" className="av-layout-status">
+            Arranging graph…
+          </p>
+        )}
+        {computedLayout.error && (
+          <p role="alert" className="av-layout-status">
+            Layout failed: {computedLayout.error} Using the basic layout.
+          </p>
+        )}
         <SceneBoundary key={reset}>
           <GraphScene
             graph={visible}

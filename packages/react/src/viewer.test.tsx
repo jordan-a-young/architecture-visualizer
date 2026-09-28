@@ -11,6 +11,7 @@ import {
 } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import type { ArchitectureGraph } from 'archgraph-core';
+import type { LayoutGeometry } from './layout.js';
 import type { GraphSceneProps } from './Scene.js';
 import type { ArchitectureViewerHandle } from './types.js';
 vi.mock('./Scene.js', () => ({
@@ -613,6 +614,72 @@ describe('hidden-node navigation regressions', () => {
     fireEvent.click(screen.getByText('scene:group:g'));
     expect(endpoint).toBeEnabled();
     fireEvent.click(endpoint);
+    expect(
+      screen.getByRole('heading', { name: 'Frontend' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('asynchronous layouts', () => {
+  it('ignores stale layout results and preserves manual overrides', async () => {
+    let finish!: (value: LayoutGeometry) => void;
+    const old = {
+      compute: () =>
+        new Promise<LayoutGeometry>((resolve) => {
+          finish = resolve;
+        }),
+    };
+    const current = {
+      compute: async () => ({
+        positions: new Map(
+          graph.nodes.map((n) => [
+            n.id,
+            [10, 0, 0] as [number, number, number],
+          ]),
+        ),
+      }),
+    };
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={graph}
+        layout={old}
+        defaultNodePositions={{ a: [7, 0, 8] }}
+      />,
+    );
+    expect(screen.getByText('Arranging graph…')).toBeInTheDocument();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    rerender(
+      <ArchitectureViewer
+        graph={graph}
+        layout={current}
+        defaultNodePositions={{ a: [7, 0, 8] }}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(
+      JSON.parse(screen.getByTestId('scene').getAttribute('data-positions')!),
+    ).toEqual({ a: [7, 0, 8], b: [10, 0, 0] });
+    await act(async () => {
+      finish({
+        positions: new Map(graph.nodes.map((n) => [n.id, [99, 0, 0]])),
+      });
+    });
+    expect(
+      JSON.parse(screen.getByTestId('scene').getAttribute('data-positions')!).b,
+    ).toEqual([10, 0, 0]);
+  });
+  it('keeps inspection available when a layout fails or returns invalid positions', async () => {
+    const layout = { compute: async () => ({ positions: new Map() }) };
+    render(<ArchitectureViewer graph={graph} layout={layout} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('Layout failed');
+    fireEvent.click(screen.getByText('scene:a'));
     expect(
       screen.getByRole('heading', { name: 'Frontend' }),
     ).toBeInTheDocument();
