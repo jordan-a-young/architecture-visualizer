@@ -6,16 +6,25 @@
   },
   "groups": [
     {
+      "id": "platform",
+      "label": "Commerce environment",
+      "description": "Example environment containing independent deployment groups."
+    },
+    {
       "id": "experience",
-      "label": "Experience"
+      "label": "Web deployment",
+      "parent": "platform"
     },
     {
       "id": "services",
-      "label": "Services"
+      "label": "API deployment",
+      "parent": "platform",
+      "description": "These application services are deployed together in this example."
     },
     {
       "id": "data",
-      "label": "Data & messaging"
+      "label": "Data & messaging",
+      "parent": "platform"
     },
     {
       "id": "shared",
