@@ -364,6 +364,21 @@ const ValidViewer = forwardRef<
     if (getNode(graph, node.id))
       changePositions({ ...overrides, [node.id]: [...position] });
   };
+  const positionContext = useRef({ graph, overrides, changePositions });
+  positionContext.current = { graph, overrides, changePositions };
+  const beginNodeMove = (node: ArchitectureNode) => {
+    const previous = Object.hasOwn(overrides, node.id)
+      ? ([...overrides[node.id]!] as Position3)
+      : undefined;
+    return () => {
+      const current = positionContext.current;
+      if (!getNode(current.graph, node.id)) return;
+      const next = { ...current.overrides };
+      if (previous) next[node.id] = [...previous];
+      else delete next[node.id];
+      current.changePositions(next);
+    };
+  };
   const resetLayout = useCallback(() => changePositions({}), [changePositions]);
   const candidate = selectedNodeId === undefined ? internalId : selectedNodeId;
   const inspectedId = path?.currentNodeId ?? candidate;
@@ -595,6 +610,7 @@ const ValidViewer = forwardRef<
               layoutPositions={layoutPositions}
               draggableNodes={draggableNodes}
               onNodeMove={moveNode}
+              onNodeDragStart={beginNodeMove}
               onNodeDragEnd={onNodeDragEnd}
               selectedId={selected?.id ?? null}
               onSelect={select}

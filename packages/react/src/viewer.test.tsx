@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRef } from 'react';
+import { createRef, useRef } from 'react';
 import {
   act,
   cleanup,
@@ -13,7 +13,7 @@ import '@testing-library/jest-dom/vitest';
 import type { ArchitectureGraph } from 'archgraph-core';
 import type { LayoutGeometry } from './layout.js';
 import type { GraphSceneProps } from './Scene.js';
-import type { ArchitectureViewerHandle } from './types.js';
+import type { ArchitectureViewerHandle, NodePositions } from './types.js';
 vi.mock('./Scene.js', () => ({
   GraphScene: ({
     graph,
@@ -22,32 +22,44 @@ vi.mock('./Scene.js', () => ({
     reset,
     positions,
     onNodeMove,
+    onNodeDragStart,
     focusRequest,
     selectedEdgeKey,
     legendEdgeKeys,
     edgeStyles,
-  }: GraphSceneProps) => (
-    <div
-      data-testid="scene"
-      data-selected={selectedId ?? ''}
-      data-edge={selectedEdgeKey ?? ''}
-      data-legend-edges={JSON.stringify(legendEdgeKeys)}
-      data-edge-styles={JSON.stringify([...edgeStyles.values()])}
-      data-focus={focusRequest?.id ?? ''}
-      data-reset={reset}
-      data-positions={JSON.stringify(Object.fromEntries(positions))}
-    >
-      {graph.nodes.map((node) => (
-        <button key={node.id} onClick={() => onSelect(node)}>
-          scene:{node.id}
+  }: GraphSceneProps) => {
+    const rollback = useRef<() => void>(undefined);
+    return (
+      <div
+        data-testid="scene"
+        data-selected={selectedId ?? ''}
+        data-edge={selectedEdgeKey ?? ''}
+        data-legend-edges={JSON.stringify(legendEdgeKeys)}
+        data-edge-styles={JSON.stringify([...edgeStyles.values()])}
+        data-focus={focusRequest?.id ?? ''}
+        data-reset={reset}
+        data-positions={JSON.stringify(Object.fromEntries(positions))}
+      >
+        {graph.nodes.map((node) => (
+          <button key={node.id} onClick={() => onSelect(node)}>
+            scene:{node.id}
+          </button>
+        ))}
+        <button onClick={() => onSelect(null)}>empty space</button>
+        <button onClick={() => onNodeMove(graph.nodes[0]!, [7, 0, 8])}>
+          move first
         </button>
-      ))}
-      <button onClick={() => onSelect(null)}>empty space</button>
-      <button onClick={() => onNodeMove(graph.nodes[0]!, [7, 0, 8])}>
-        move first
-      </button>
-    </div>
-  ),
+        <button
+          onClick={() => {
+            rollback.current = onNodeDragStart(graph.nodes[0]!);
+          }}
+        >
+          start drag
+        </button>
+        <button onClick={() => rollback.current?.()}>cancel drag</button>
+      </div>
+    );
+  },
 }));
 import { ArchitectureViewer } from './ArchitectureViewer.js';
 import { getEdgeKey } from './edgeKey.js';
@@ -205,6 +217,77 @@ describe('viewer behavior without WebGL', () => {
 describe('manual positions', () => {
   const positions = () =>
     JSON.parse(screen.getByTestId('scene').getAttribute('data-positions')!);
+  it.each<NodePositions>([{}, { a: [1, 0, 2] }])(
+    'restores the original override set after cancellation: %j',
+    (initial) => {
+      const ref = createRef<ArchitectureViewerHandle>();
+      const changed = vi.fn();
+      render(
+        <ArchitectureViewer
+          ref={ref}
+          graph={graph}
+          defaultNodePositions={initial}
+          onNodePositionsChange={changed}
+        />,
+      );
+      fireEvent.click(screen.getByText('start drag'));
+      fireEvent.click(screen.getByText('move first'));
+      expect(ref.current!.getViewState().nodePositions).toEqual({
+        a: [7, 0, 8],
+      });
+      fireEvent.click(screen.getByText('cancel drag'));
+      expect(ref.current!.getViewState().nodePositions).toEqual(initial);
+      expect(changed).toHaveBeenLastCalledWith(initial);
+    },
+  );
+  it.each<NodePositions>([{}, { a: [1, 0, 2] }])(
+    'rolls back only the dragged node using the latest controlled state: %j',
+    (initial) => {
+      const changed = vi.fn();
+      const { rerender } = render(
+        <ArchitectureViewer
+          graph={graph}
+          nodePositions={initial}
+          onNodePositionsChange={changed}
+        />,
+      );
+      fireEvent.click(screen.getByText('start drag'));
+      fireEvent.click(screen.getByText('move first'));
+      rerender(
+        <ArchitectureViewer
+          graph={graph}
+          nodePositions={{ a: [7, 0, 8], b: [20, 0, 20] }}
+          onNodePositionsChange={changed}
+        />,
+      );
+      fireEvent.click(screen.getByText('cancel drag'));
+      expect(changed).toHaveBeenLastCalledWith({ ...initial, b: [20, 0, 20] });
+      // Controlled state remains authoritative until the host accepts rollback.
+      expect(positions().a).toEqual([7, 0, 8]);
+    },
+  );
+  it('does not reintroduce a removed node when an active drag is cancelled', () => {
+    const changed = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={graph}
+        defaultNodePositions={{ a: [1, 0, 2] }}
+        onNodePositionsChange={changed}
+      />,
+    );
+    fireEvent.click(screen.getByText('start drag'));
+    fireEvent.click(screen.getByText('move first'));
+    rerender(
+      <ArchitectureViewer
+        graph={{ ...graph, nodes: [graph.nodes[1]!], edges: [] }}
+        onNodePositionsChange={changed}
+      />,
+    );
+    changed.mockClear();
+    fireEvent.click(screen.getByText('cancel drag'));
+    expect(changed).not.toHaveBeenCalled();
+    expect(positions().a).toBeUndefined();
+  });
   it('retains uncontrolled positions through selection, filters and camera reset, then resets layout', () => {
     const original = JSON.stringify(graph);
     const ref = createRef<ArchitectureViewerHandle>();

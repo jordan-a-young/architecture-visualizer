@@ -9,6 +9,7 @@ interface DragOptions {
   position: Position3;
   lock: RefObject<boolean>;
   onMove: (position: Position3) => void;
+  onStart: () => () => void;
   onEnd: (position: Position3) => void;
   onSelect: () => void;
 }
@@ -70,6 +71,7 @@ export function useNodeDrag(options: DragOptions) {
     if (orbit) orbit.enabled = false;
     current.lock.current = true;
     canvas.setPointerCapture(pointerId);
+    const rollback = current.onStart();
     const suppressClick = (click: MouseEvent) => {
       if (viewport?.contains(click.target as Node)) {
         click.preventDefault();
@@ -98,7 +100,7 @@ export function useNodeDrag(options: DragOptions) {
         0,
       );
       if (cancelled) {
-        if (moved) latest.current.onMove(initial);
+        if (moved) rollback();
       } else if (moved) latest.current.onEnd([...last]);
       else latest.current.onSelect();
       invalidate();

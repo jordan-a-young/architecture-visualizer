@@ -68,12 +68,19 @@ function CameraRig({
 }) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const { camera, size, invalidate } = useThree();
+  const explicitView = useRef(false);
+  const latestSize = useRef(size);
+  latestSize.current = size;
   const latestPositions = useRef(positions);
   latestPositions.current = positions;
   const latestBounds = useRef(bounds);
   latestBounds.current = bounds;
   const framingKey = JSON.stringify([...layoutPositions]);
   useEffect(() => {
+    // Fit initial/automatic layouts until the user takes ownership of the view.
+    // R3F updates the projection on resize without changing position or target.
+    if (explicitView.current) return;
+    const size = latestSize.current;
     const positions = latestPositions.current;
     const box = new Box3();
     for (const position of latestBounds.current)
@@ -114,11 +121,12 @@ function CameraRig({
       controls.current.update();
     }
     invalidate();
-  }, [framingKey, reset, preset, camera, size.width, size.height, invalidate]);
+  }, [framingKey, reset, preset, camera, invalidate]);
   useEffect(() => {
     if (!focusRequest) return;
     const position = latestPositions.current.get(focusRequest.id);
     if (!position || !controls.current) return;
+    explicitView.current = true;
     const target = new Vector3(...position);
     const direction = camera.position
       .clone()
@@ -138,6 +146,7 @@ function CameraRig({
   }, [camera, onCameraReady]);
   useEffect(() => {
     if (!cameraRequest || !controls.current) return;
+    explicitView.current = true;
     const orbit = controls.current;
     const damping = orbit.enableDamping;
     orbit.enableDamping = false;
@@ -155,6 +164,9 @@ function CameraRig({
       ref={controls}
       makeDefault
       enableDamping
+      onStart={() => {
+        explicitView.current = true;
+      }}
       minDistance={3}
       maxPolarAngle={Math.PI * 0.85}
     />
@@ -183,6 +195,8 @@ export interface GraphSceneProps {
   layoutPositions: LayoutResult;
   draggableNodes: boolean;
   onNodeMove: (node: ArchitectureNode, position: Position3) => void;
+  /** Begin a gesture and return its rollback, including absent position overrides. */
+  onNodeDragStart: (node: ArchitectureNode) => () => void;
   onNodeDragEnd?: ArchitectureViewerProps['onNodeDragEnd'];
   selectedId: string | null;
   onSelect: (node: ArchitectureNode | null) => void;
@@ -216,6 +230,7 @@ function SupportedScene({
   layoutPositions,
   draggableNodes,
   onNodeMove,
+  onNodeDragStart,
   onNodeDragEnd,
   focusRequest,
   onCameraReady,
@@ -320,7 +335,7 @@ function SupportedScene({
           selectionEmphasis || legendEdgeKeys.includes(edgeKeys.get(edge)!);
         return (
           <GraphEdge
-            key={edge.id ?? `edge-${i}`}
+            key={edgeKeys.get(edge)!}
             edge={edge}
             route={edgePaths?.get(edgeKeys.get(edge)!)}
             edgeKey={edgeKeys.get(edge)!}
@@ -361,6 +376,7 @@ function SupportedScene({
             dragLock={dragLock}
             onSelect={() => onSelect(node)}
             onMove={(position) => onNodeMove(node, position)}
+            onDragStart={() => onNodeDragStart(node)}
             onDragEnd={(position) => onNodeDragEnd?.(node, position)}
           />
         );

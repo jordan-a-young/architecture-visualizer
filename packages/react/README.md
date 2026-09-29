@@ -16,7 +16,7 @@ Custom renderers are R3F components receiving node, selected/highlighted/dimmed 
 
 ## Fullscreen and browser support
 
-**Enter fullscreen** expands this viewer, including its legend and inspector, using the standard Fullscreen API. **Exit fullscreen**, Escape or the browser's fullscreen control restores the embedded view. Fullscreen changes resize the canvas; PNG capture uses its current pixel resolution. Selection, manual positions and graph data stay intact. Escape while the viewer is fullscreen is reserved for exiting fullscreen; outside fullscreen it clears selection as usual.
+**Enter fullscreen** expands this viewer, including its legend and inspector, using the standard Fullscreen API. **Exit fullscreen**, Escape or the browser's fullscreen control restores the embedded view. Fullscreen changes resize the canvas; PNG capture uses its current pixel resolution. Resizing preserves the camera position and orbit target, selection, manual positions and graph data. Use **Reset camera** to fit the graph to the new aspect ratio. Escape while the viewer is fullscreen is reserved for exiting fullscreen; outside fullscreen it clears selection as usual.
 
 The button is hidden when the standard API is unavailable or disabled by browser policy. In embedded applications, the host must permit fullscreen on the containing iframe. A rejected entry/exit request shows an inline error and can be retried. Multiple viewers track their own fullscreen state; controls on other viewers are disabled while another element is fullscreen. Fullscreen is transient browser state and is not stored in `ViewerViewState`. On narrow screens the fullscreen viewer scrolls so the inspector remains reachable.
 
@@ -99,7 +99,7 @@ const geometryOnly = await viewer.current!.captureScreenshot({
 
 ## Node dragging
 
-Enable `draggableNodes` to move nodes by dragging their geometry or label with a mouse, pen, or touch. Movement follows the horizontal world plane at the node's starting height. Connected edges follow immediately. A short click still selects; dragging does not navigate or change selection. Orbit controls pause during a drag and resume afterward. Escape, pointer cancellation, or losing focus rolls back the active gesture. Drag the background to orbit as before.
+Enable `draggableNodes` to move nodes by dragging their geometry or label with a mouse, pen, or touch. Movement follows the horizontal world plane at the node's starting height. Connected edges follow immediately. A short click still selects; dragging does not navigate or change selection. Orbit controls pause during a drag and resume afterward. Escape, pointer cancellation, or losing focus rolls back the active gesture, restoring the node's previous override or removing the override if it previously followed automatic layout. Other nodes' current overrides are preserved. Drag the background to orbit as before.
 
 ```tsx
 import { useState } from 'react';
@@ -201,7 +201,7 @@ Expanded groups display a subtle floor, outline, and label. These are generic gr
 
 `showGroupBoundaries` defaults to true; false hides the visual outlines without removing grouping or collapse controls. `groupStyle(group)` controls color and fill opacity. Boundary labels collapse groups, using the existing controlled/uncontrolled collapse API; summary labels expand them. Floors and outlines do not intercept node/edge clicks or orbit gestures. Labels are keyboard-accessible and included in PNG exports; geometry-only exports keep the floors/outlines but omit labels.
 
-Bounds enclose visible member footprints and nested children, update while dragging, and disappear for empty/fully filtered or collapsed groups. A collapsed child summary remains enclosed by its parent. Boundary labels do not assert deployment facts: consumers are responsible for choosing the grouping. Arbitrary manual placements or custom layouts can create overlapping boundaries; enable a group-aware layout to arrange separate regions. The camera only reframes on layout changes or explicit reset, not on every drag.
+Bounds enclose visible member footprints and nested children, update while dragging, and disappear for empty/fully filtered or collapsed groups. A collapsed child summary remains enclosed by its parent. Boundary labels do not assert deployment facts: consumers are responsible for choosing the grouping. Arbitrary manual placements or custom layouts can create overlapping boundaries; enable a group-aware layout to arrange separate regions. Moving nodes never automatically reframes the camera.
 
 ## Relationship routing
 
@@ -214,6 +214,8 @@ After dragging or collapse, the pure `routeEdges(graph, positions, options?)` he
 ## Arrangement and camera controls
 
 **Top view** or `ref.setCameraPreset('top')` fits the visible graph from above using the existing perspective camera. Orbit/pan/zoom remain available. **Reset camera** and `ref.setCameraPreset('perspective')` restore the angled overview. Presets do not change node positions; saved views retain the exact camera position and target.
+
+The camera automatically fits initial layouts and subsequent layout changes until you orbit, pan, zoom, focus a node, or restore a saved camera. After that, layout completion and visibility changes preserve your chosen view. Canvas/window resizing and fullscreen transitions always preserve camera position and orbit target. **Reset camera** or **Top view** explicitly fits the visible graph again and resumes automatic framing until the next camera interaction.
 
 **Arrange visible** or `await ref.arrangeVisibleGraph()` explicitly lays out the filtered graph. Existing position overrides remain fixed. New calculated positions become overrides, so they survive filters and are included in saved views; **Reset layout** releases them. Collapsed groups are arranged using their retained member nodes, then projected into summaries. Changing filters alone still preserves the layout. Controlled hosts receive `onNodePositionsChange` and may decline the proposal. Results are discarded if graph, layout, filters or overrides change during calculation; failures preserve current positions and reject the imperative Promise. The built-in control displays errors.
 

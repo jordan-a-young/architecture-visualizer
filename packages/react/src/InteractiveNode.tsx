@@ -22,6 +22,7 @@ export function InteractiveNode({
   dragLock,
   onSelect,
   onMove,
+  onDragStart,
   onDragEnd,
 }: {
   node: ArchitectureNode;
@@ -36,6 +37,7 @@ export function InteractiveNode({
   dragLock: RefObject<boolean>;
   onSelect: () => void;
   onMove: (position: Position3) => void;
+  onDragStart: () => () => void;
   onDragEnd: (position: Position3) => void;
 }) {
   const { invalidate } = useThree();
@@ -60,6 +62,7 @@ export function InteractiveNode({
     position,
     lock: dragLock,
     onMove,
+    onStart: onDragStart,
     onEnd: onDragEnd,
     onSelect,
   });
