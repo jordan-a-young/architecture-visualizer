@@ -439,3 +439,16 @@
 .av-group-list small {
   color: #78899e;
 }
+
+.av-layout-status {
+  position: absolute;
+  left: 12px;
+  bottom: 45px;
+  z-index: 30;
+  max-width: calc(100% - 24px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fff;
+  color: #435269;
+  font-size: 12px;
+}

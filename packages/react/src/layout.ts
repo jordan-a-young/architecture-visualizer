@@ -1,8 +1,27 @@
-import type { ArchitectureGraph } from 'archgraph-core';
+import type { ArchitectureGraph, ArchitectureNode } from 'archgraph-core';
 export type Position3 = [number, number, number];
 export type LayoutResult = ReadonlyMap<string, Position3>;
 export type LayoutFunction = (graph: ArchitectureGraph) => LayoutResult;
-export type Layout = 'layered' | LayoutFunction;
+export interface NodeSize {
+  width: number;
+  depth: number;
+}
+/** Rendering-independent geometry in world units. Edge keys use getEdgeKey. */
+export interface LayoutGeometry {
+  positions: LayoutResult;
+  nodeSizes?: ReadonlyMap<string, NodeSize>;
+  edgePaths?: ReadonlyMap<string, readonly Position3[]>;
+}
+export interface LayoutEngine {
+  compute: (
+    graph: ArchitectureGraph,
+  ) => LayoutGeometry | Promise<LayoutGeometry>;
+}
+export type Layout = 'layered' | LayoutFunction | LayoutEngine;
+export function defaultNodeSize(node: ArchitectureNode): NodeSize {
+  const size = node.visual?.size ?? 1;
+  return { width: 1.4 * size, depth: 1.4 * size };
+}
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 /** Stable breadth-first layers. Cyclic/disconnected components get a deterministic seed. */
 export const layeredLayout: LayoutFunction = (graph) => {
@@ -62,7 +81,7 @@ export const layeredLayout: LayoutFunction = (graph) => {
 /** Fail clearly if a consumer's custom layout omits nodes or returns non-finite coordinates. */
 export function computeLayout(
   graph: ArchitectureGraph,
-  layout: Layout = 'layered',
+  layout: 'layered' | LayoutFunction = 'layered',
 ): LayoutResult {
   const result =
     typeof layout === 'function' ? layout(graph) : layeredLayout(graph);
@@ -74,4 +93,28 @@ export function computeLayout(
       );
   }
   return result;
+}
+
+/** Validate asynchronous/custom geometry before it reaches Three.js. */
+export function validateLayoutGeometry(
+  graph: ArchitectureGraph,
+  geometry: LayoutGeometry,
+): LayoutGeometry {
+  computeLayout(graph, () => geometry.positions);
+  for (const size of geometry.nodeSizes?.values() ?? [])
+    if (
+      ![size.width, size.depth].every(
+        (value) => Number.isFinite(value) && value > 0,
+      )
+    )
+      throw new Error('Layout node sizes must be finite and positive.');
+  for (const path of geometry.edgePaths?.values() ?? [])
+    if (
+      path.length < 2 ||
+      path.some((p) => p.length !== 3 || !p.every(Number.isFinite))
+    )
+      throw new Error(
+        'Layout edge paths must contain at least two finite positions.',
+      );
+  return geometry;
 }

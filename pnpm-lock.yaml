@@ -47,15 +47,18 @@ importers:
 
   apps/demo:
     dependencies:
-      'archgraph-core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      'archgraph-react':
-        specifier: workspace:*
-        version: link:../../packages/react
       '@react-three/fiber':
         specifier: ^9.4.0
         version: 9.7.0(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.182.0)
+      archgraph-core:
+        specifier: workspace:*
+        version: link:../../packages/core
+      archgraph-react:
+        specifier: workspace:*
+        version: link:../../packages/react
+      elkjs:
+        specifier: 0.11.1
+        version: 0.11.1
       react:
         specifier: ~19.2.0
         version: 19.2.8
@@ -87,12 +90,12 @@ importers:
 
   packages/react:
     dependencies:
-      'archgraph-core':
-        specifier: workspace:^
-        version: link:../core
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.8(@react-three/fiber@9.7.0(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.182.0))(@types/react@19.3.0)(@types/three@0.182.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.182.0)
+      archgraph-core:
+        specifier: workspace:^
+        version: link:../core
     devDependencies:
       '@react-three/fiber':
         specifier: ^9.4.0
@@ -106,6 +109,9 @@ importers:
       '@types/three':
         specifier: ~0.182.0
         version: 0.182.0
+      elkjs:
+        specifier: 0.11.1
+        version: 0.11.1
       react:
         specifier: ~19.2.0
         version: 19.2.8
@@ -980,6 +986,9 @@ packages:
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
+
+  elkjs@0.11.1:
+    resolution: {integrity: sha512-zxxR9k+rx5ktMwT/FwyLdPCrq7xN6e4VGGHH8hA01vVYKjTFik7nHOxBnAYtrgYUB1RpAiLvA1/U2YraWxyKKg==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -2603,6 +2612,8 @@ snapshots:
   draco3d@1.5.7: {}
 
   eastasianwidth@0.2.0: {}
+
+  elkjs@0.11.1: {}
 
   emoji-regex@8.0.0: {}
 

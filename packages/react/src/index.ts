@@ -5,12 +5,20 @@ export { ArchitectureViewer } from './ArchitectureViewer.js';
 export { DefaultDetailsPanel } from './DetailsPanel.js';
 export { DefaultNodeRenderer, getNodeColor } from './Node.js';
 export { defaultEdgeStyle } from './Edge.js';
-export { layeredLayout, computeLayout } from './layout.js';
+export {
+  layeredLayout,
+  computeLayout,
+  validateLayoutGeometry,
+  defaultNodeSize,
+} from './layout.js';
 export type {
   Layout,
   LayoutFunction,
   LayoutResult,
   Position3,
+  LayoutEngine,
+  LayoutGeometry,
+  NodeSize,
 } from './layout.js';
 export { useFilteredGraph } from './hooks.js';
 export type {
