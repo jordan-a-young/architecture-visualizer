@@ -63,7 +63,7 @@ try {
     'src/main.tsx',
     `import { createRoot } from 'react-dom/client';
 import { ArchitectureViewer, getEdgeKey, parseViewState } from 'archgraph-react';
-import type { ArchitectureViewerHandle, LayoutFunction, NodeRendererProps, NodePositions, WalkthroughState, ViewerViewState } from 'archgraph-react';
+import type { ArchitectureViewerHandle, LayoutFunction, NodeRendererProps, NodePositions, NodeLabelMode, WalkthroughState, ViewerViewState } from 'archgraph-react';
 import { validateGraph } from 'archgraph-core';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -77,10 +77,11 @@ export const restoreView = (viewer: ArchitectureViewerHandle, state: unknown) =>
 export const arrangeVisible = (viewer: ArchitectureViewerHandle) => viewer.arrangeVisibleGraph();
 export const resetLayout = (viewer: ArchitectureViewerHandle) => viewer.resetLayout();
 export const walkthrough: WalkthroughState = { startNodeId: 'a', edgeKeys: [] };
+const labelMode: NodeLabelMode = 'selected';
 const positions: NodePositions = { a: [1, 0, 2] };
 export const screenshot = (viewer: ArchitectureViewerHandle): Promise<Blob> => viewer.captureScreenshot({includeLabels: true});
 if (!validateGraph(graph).valid) throw new Error('Unexpected invalid fixture');
-createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} layout={layout} collapsedGroupIds={[]} onCollapsedGroupsChange={ids => { void ids; }} nodeRenderers={{ custom: Custom }} showGroupBoundaries groupStyle={() => ({color:"#445566",fillOpacity:0.06})} edgeRouting="orthogonal" draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
+createRoot(document.getElementById('root')!).render(<ArchitectureViewer ref={ref} graph={graph} nodeLabelMode={labelMode} layout={layout} collapsedGroupIds={[]} onCollapsedGroupsChange={ids => { void ids; }} nodeRenderers={{ custom: Custom }} showGroupBoundaries groupStyle={() => ({color:"#445566",fillOpacity:0.06})} edgeRouting="orthogonal" draggableNodes defaultNodePositions={positions} onNodePositionsChange={next => console.log(next.a)} onNodeDragEnd={(node, position) => console.log(node.id, position)}/>);
 `,
   );
   const run = (args) =>
