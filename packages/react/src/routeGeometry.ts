@@ -8,9 +8,9 @@ export function roundRoute(
   input: readonly Position3[],
   radius = 0.18,
 ): Position3[] {
-  const path = input.filter(
-    (p, i) => i === 0 || distance(p, input[i - 1]!) > 1e-8,
-  );
+  const path: Position3[] = [];
+  for (const point of input)
+    if (!path.length || distance(point, path.at(-1)!) > 1e-8) path.push(point);
   if (path.length < 3) return path.map((p) => [...p]);
   const result: Position3[] = [[...path[0]!]];
   for (let i = 1; i < path.length - 1; i++) {

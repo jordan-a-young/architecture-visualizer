@@ -30,6 +30,7 @@ export type {
   NodeRendererRegistry,
   EdgeStyle,
   GroupStyle,
+  CameraPreset,
   DetailsPanelProps,
 } from './types.js';
 

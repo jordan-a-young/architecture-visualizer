@@ -100,7 +100,11 @@ export interface ArchitectureViewerProps {
   style?: CSSProperties;
   ariaLabel?: string;
 }
+export type CameraPreset = 'perspective' | 'top';
 export interface ArchitectureViewerHandle {
+  setCameraPreset: (preset: CameraPreset) => void;
+  /** Arrange filtered nodes, retaining existing manual overrides. Controlled hosts receive a proposal. */
+  arrangeVisibleGraph: () => Promise<void>;
   resetCamera: () => void;
   /** Serializable snapshot; predicate filters cannot be saved. */
   getViewState: () => ViewerViewState;

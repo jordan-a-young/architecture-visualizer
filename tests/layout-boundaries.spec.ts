@@ -78,3 +78,63 @@ test('boundaries follow dragged nodes and label clicks respect controlled collap
     .click();
   await expect(page.locator('.av-group-label')).toHaveCount(2);
 });
+
+test('demo layout controls switch direction, boundaries and camera while keeping the graph inspectable', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('.av-node-label')).toHaveCount(10);
+  await expect(page.getByText('Arranging graph…', { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.locator('.av-group-label')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Top view', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Download PNG', exact: true }),
+  ).toBeEnabled();
+  await expect(page.locator('.av-node-label')).toHaveCount(10);
+  await page
+    .locator('.viewer-shell')
+    .screenshot({ path: 'artifacts/advanced-layout-top.png' });
+  await page
+    .getByRole('combobox', { name: 'Direction', exact: true })
+    .selectOption('DOWN');
+  await expect(page.getByText('Arranging graph…', { exact: true })).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole('combobox', { name: 'Spacing', exact: true })
+    .selectOption('5');
+  await expect(page.getByText('Arranging graph…', { exact: true })).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole('checkbox', { name: 'Group boundaries', exact: true })
+    .uncheck();
+  await expect(page.locator('.av-group-label')).toHaveCount(0);
+  await page
+    .getByRole('checkbox', { name: 'Group boundaries', exact: true })
+    .check();
+  await page.getByLabel('Node type', { exact: true }).selectOption('service');
+  await expect(page.locator('.av-node-label')).toHaveCount(3);
+  await page
+    .getByRole('button', { name: 'Arrange visible', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Arrange visible', exact: true }),
+  ).toBeEnabled();
+  await page
+    .locator('.av-node-label')
+    .filter({ hasText: 'Orders Service' })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Orders Service', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Reset layout', exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Layout', exact: true })
+    .selectOption('basic');
+  await expect(
+    page.getByRole('combobox', { name: 'Direction', exact: true }),
+  ).toBeDisabled();
+});

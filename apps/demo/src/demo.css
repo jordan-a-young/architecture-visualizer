@@ -220,3 +220,27 @@ footer i {
 .saved-views [role='status'] {
   font-size: 11px;
 }
+
+.layoutbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  padding: 10px 4px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #53677f;
+}
+.layoutbar label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.layoutbar select {
+  padding: 5px;
+  border: 1px solid #dfe5eb;
+  border-radius: 5px;
+  background: white;
+  color: #344257;
+  font: inherit;
+}

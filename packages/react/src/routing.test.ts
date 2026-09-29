@@ -27,6 +27,14 @@ const positions = new Map<string, Position3>([
   ['obstacle', [0, 0, 0]],
 ]);
 describe('routing geometry', () => {
+  it('retains a drawable segment when many tiny steps accumulate', () => {
+    const rounded = roundRoute(
+      Array.from({ length: 10 }, (_, i): Position3 => [i * 5e-9, 0, 0]),
+    );
+    expect(rounded.length).toBeGreaterThan(1);
+    expect(rounded.at(-1)![0]).toBeGreaterThan(1e-8);
+    expect(rounded.flat().every(Number.isFinite)).toBe(true);
+  });
   it('routes around intervening nodes and keeps rounded paths outside their footprints', () => {
     const before = structuredClone(graph);
     const route = [...routeEdges(graph, positions).values()][0]!;

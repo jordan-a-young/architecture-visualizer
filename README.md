@@ -205,7 +205,7 @@ const myLayout: LayoutFunction = (graph) =>
 
 Custom renderers receive the node, selection/highlight/dimming state, color and opacity. Render local R3F geometry; the viewer owns positions, labels and click handlers. Honor the supplied state for consistent behavior. Unknown types receive a neutral box. `DefaultNodeRenderer`, `DefaultDetailsPanel` and `getNodeColor` are public extension helpers.
 
-The automatic layout uses deterministic breadth-first layers, stable group/ID ordering, and seeded cyclic/disconnected components. Groups influence ordering and appear in labels; parent groups are modeled but not rendered as nested enclosures. `LayoutFunction` receives the full graph and returns a `ReadonlyMap<string, [number, number, number]>` for every node. Filtering preserves these positions; manual overrides apply afterward. Invalid custom positions throw a descriptive programming error. There is no provider-specific ranking.
+The built-in automatic layout uses deterministic breadth-first layers, stable group/ID ordering, and seeded cyclic/disconnected components. Groups influence ordering and render as labeled, nested boundaries by default; the optional ELK adapter also arranges groups into separate regions. `LayoutFunction` receives the full graph and returns a `ReadonlyMap<string, [number, number, number]>` for every node. Filtering preserves these positions; manual overrides apply afterward. Invalid custom positions throw a descriptive programming error. There is no provider-specific ranking.
 
 Directed edges have arrowheads, curved offsets for parallel connections, loops for self-edges, and a deterministic color per arbitrary edge type. Explicit visual settings and then `edgeStyle` override defaults. There are no animations beyond damped camera controls. Rendering is on demand.
 
@@ -230,7 +230,7 @@ ESM and TypeScript declarations are exported; no CommonJS build is claimed. CSS 
 
 ## V1 limits and next steps
 
-This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. Layout is simple and not crossing-minimized; dense graphs can overlap labels. Benchmark larger graphs before setting scale guarantees. Nested group enclosures, SCC-aware layout, and virtualized labels remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
+This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. The built-in layout is simple; the optional ELK adapter reduces crossings and respects nested groups. Expanded groups have visual boundaries. Dense graphs can still overlap labels, and crossing counts depend on the camera. Benchmark larger graphs before setting scale guarantees. Virtualized labels and richer layout constraints remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
 
 ## License
 
@@ -259,3 +259,5 @@ The optional `archgraph-react/elk` adapter uses ELK to reduce crossings, positio
 Existing groups can describe nodes deployed together: for example `groups: [{ id: 'checkout', label: 'Checkout deployment' }]` and `group: 'checkout'` on its nodes. Expanded groups render labeled, lightly shaded boundaries; `parent` supports nesting. Click a boundary label to collapse it. Boundaries follow dragging and filters and appear in screenshots. The library does not infer deployment membership. Customize with `showGroupBoundaries` and `groupStyle`.
 
 Advanced layouts supply rounded orthogonal routes with attachment points and obstacle avoidance. Set `edgeRouting="orthogonal"` to enable routing with a custom position-only layout, or `"curved"` for the original appearance. Moved nodes and collapsed groups retain inspectable original relationships. See [the React documentation](packages/react/README.md#relationship-routing) for routing limits and extension points.
+
+The demo now shows nested deployment groups and offers advanced/basic layout, direction, spacing, and boundary visibility controls. **Top view** makes route crossings easier to assess; **Arrange visible** explicitly compacts the filtered graph while keeping manual overrides. Resulting positions are saved with the view. **Reset layout** releases these overrides; **Reset camera** returns to the angled overview.

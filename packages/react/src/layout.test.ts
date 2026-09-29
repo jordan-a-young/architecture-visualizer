@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ArchitectureGraph } from 'archgraph-core';
-import { computeLayout, layeredLayout } from './layout.js';
+import {
+  computeLayout,
+  layeredLayout,
+  validateLayoutGeometry,
+} from './layout.js';
+import type { Position3 } from './layout.js';
 const graph: ArchitectureGraph = {
   version: '1.0',
   groups: [],
@@ -12,6 +17,35 @@ const graph: ArchitectureGraph = {
   ],
 };
 describe('layout', () => {
+  it('rejects routes that collapse to one point while accepting closed loops', () => {
+    const positions = layeredLayout(graph);
+    for (const endpoint of [
+      [0, 0, 0],
+      [1e-10, 0, 0],
+    ] as Position3[]) {
+      expect(() =>
+        validateLayoutGeometry(graph, {
+          positions,
+          edgePaths: new Map([['route', [[0, 0, 0], endpoint]]]),
+        }),
+      ).toThrow('distinct');
+    }
+    expect(() =>
+      validateLayoutGeometry(graph, {
+        positions,
+        edgePaths: new Map([
+          [
+            'loop',
+            [
+              [0, 0, 0],
+              [1, 0, 1],
+              [0, 0, 0],
+            ],
+          ],
+        ]),
+      }),
+    ).not.toThrow();
+  });
   it('is deterministic, cycle-safe, unique, and complete for disconnected graphs', () => {
     const before = structuredClone(graph);
     const result = layeredLayout(graph);

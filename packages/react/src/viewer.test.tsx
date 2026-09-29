@@ -685,3 +685,103 @@ describe('asynchronous layouts', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('explicit arrangement and camera presets', () => {
+  it('arranges filtered nodes while preserving manual and hidden overrides, and saves the result', async () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    const filteredGraph = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        { id: 'hidden', label: 'Hidden', type: 'hidden' },
+      ],
+    };
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={filteredGraph}
+        filters={{ nodeIds: ['a', 'b'] }}
+        defaultNodePositions={{ a: [9, 0, 9], hidden: [20, 0, 0] }}
+      />,
+    );
+    await act(async () => {
+      await ref.current!.arrangeVisibleGraph();
+    });
+    const state = ref.current!.getViewState();
+    expect(state.nodePositions.a).toEqual([9, 0, 9]);
+    expect(state.nodePositions.hidden).toEqual([20, 0, 0]);
+    expect(state.nodePositions.b).toEqual([2.5, 0, 0]);
+    act(() => ref.current!.setCameraPreset('top'));
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-reset', '1');
+    fireEvent.click(screen.getByRole('button', { name: 'Reset camera' }));
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-reset', '2');
+  });
+  it('proposes controlled arrangements without moving nodes when declined', async () => {
+    const onChange = vi.fn();
+    const ref = createRef<ArchitectureViewerHandle>();
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        filters={{ nodeIds: ['b'] }}
+        nodePositions={{}}
+        onNodePositionsChange={onChange}
+      />,
+    );
+    const before = screen.getByTestId('scene').getAttribute('data-positions');
+    await act(async () => {
+      await ref.current!.arrangeVisibleGraph();
+    });
+    expect(onChange).toHaveBeenCalledWith({ b: [0, 0, 0] });
+    expect(screen.getByTestId('scene').getAttribute('data-positions')).toBe(
+      before,
+    );
+  });
+  it('discards an arrangement that completes after filters change', async () => {
+    const ref = createRef<ArchitectureViewerHandle>();
+    let finish!: (value: LayoutGeometry) => void;
+    const engine = {
+      compute: (g: ArchitectureGraph) =>
+        g.nodes.length === 1
+          ? new Promise<LayoutGeometry>((resolve) => {
+              finish = resolve;
+            })
+          : {
+              positions: new Map(
+                g.nodes.map((n) => [
+                  n.id,
+                  [0, 0, 0] as [number, number, number],
+                ]),
+              ),
+            },
+    };
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        layout={engine}
+        filters={{ nodeIds: ['b'] }}
+        onNodePositionsChange={onChange}
+      />,
+    );
+    let pending!: Promise<void>;
+    act(() => {
+      pending = ref.current!.arrangeVisibleGraph();
+    });
+    rerender(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        layout={engine}
+        filters={{ nodeIds: ['a'] }}
+        onNodePositionsChange={onChange}
+      />,
+    );
+    await act(async () => {
+      finish({ positions: new Map([['b', [8, 0, 8]]]) });
+      await pending;
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

@@ -20,6 +20,27 @@ export function LabelPlacement() {
       top: number;
       bottom: number;
     }[] = [];
+    // Keep group names inside the viewport and reserve their space before node labels.
+    for (const label of viewport.querySelectorAll<HTMLElement>(
+      '.av-group-label',
+    )) {
+      label.style.setProperty('--av-group-label-x', '0px');
+      const box = label.getBoundingClientRect();
+      if (!box.width || box.left > bounds.right || box.right < bounds.left)
+        continue;
+      const offset =
+        Math.min(0, bounds.right - 8 - box.right) +
+        Math.max(0, bounds.left + 8 - box.left);
+      label.style.setProperty('--av-group-label-x', `${offset}px`);
+      // On narrow canvases, prioritize node labels; group controls remain in Browse nodes.
+      if (bounds.width >= 640)
+        placed.push({
+          left: box.left + offset - 3,
+          right: box.right + offset + 3,
+          top: box.top - 3,
+          bottom: box.bottom + 3,
+        });
+    }
     for (const label of labels) {
       label.style.setProperty('--av-label-offset', '0px');
       const box = label.getBoundingClientRect();
