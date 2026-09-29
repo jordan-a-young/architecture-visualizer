@@ -253,3 +253,9 @@ Open Browse nodes → Groups to collapse a group into a labeled summary. Nested 
 ## Advanced layouts
 
 The optional `archgraph-react/elk` adapter uses ELK to reduce crossings, position nested groups, and calculate orthogonal routes. Install the optional `elkjs` peer and pass a stable `createElkLayout()` result to the viewer's `layout` prop. The built-in layered layout and existing custom layout functions remain available without ELK. Layout computation stays local and provider-independent. See [the React layout API](packages/react/README.md#optional-advanced-layout) for options, asynchronous behavior and dependency decisions.
+
+## Deployment boundaries and routes
+
+Existing groups can describe nodes deployed together: for example `groups: [{ id: 'checkout', label: 'Checkout deployment' }]` and `group: 'checkout'` on its nodes. Expanded groups render labeled, lightly shaded boundaries; `parent` supports nesting. Click a boundary label to collapse it. Boundaries follow dragging and filters and appear in screenshots. The library does not infer deployment membership. Customize with `showGroupBoundaries` and `groupStyle`.
+
+Advanced layouts supply rounded orthogonal routes with attachment points and obstacle avoidance. Set `edgeRouting="orthogonal"` to enable routing with a custom position-only layout, or `"curved"` for the original appearance. Moved nodes and collapsed groups retain inspectable original relationships. See [the React documentation](packages/react/README.md#relationship-routing) for routing limits and extension points.

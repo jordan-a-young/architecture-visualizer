@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import {
-  CatmullRomCurve3,
+  CurvePath,
+  LineCurve3,
   QuadraticBezierCurve3,
   Quaternion,
   Vector3,
 } from 'three';
 import type { ArchitectureEdge } from 'archgraph-core';
 import type { Position3 } from './layout.js';
+import { roundRoute, routeLabelPosition } from './routeGeometry.js';
 import type { EdgeStyle } from './types.js';
 const palette = ['#8394ab', '#6c9693', '#a59375', '#9383a4'];
 export function defaultEdgeStyle(type = ''): EdgeStyle {
@@ -17,6 +19,7 @@ export function defaultEdgeStyle(type = ''): EdgeStyle {
 }
 export function GraphEdge({
   edge,
+  route,
   start,
   end,
   emphasized,
@@ -28,6 +31,7 @@ export function GraphEdge({
   onSelect,
 }: {
   edge: ArchitectureEdge;
+  route?: readonly Position3[];
   edgeKey: string;
   onSelect: () => void;
   start: Position3;
@@ -42,7 +46,9 @@ export function GraphEdge({
     const from = new Vector3(...start);
     const to = new Vector3(...end);
     let points: Vector3[];
-    if (edge.source === edge.target) {
+    if (route) {
+      points = roundRoute(route).map((p) => new Vector3(...p));
+    } else if (edge.source === edge.target) {
       points = Array.from({ length: 41 }, (_, index) => {
         const angle = (index / 40) * Math.PI * 2;
         return from
@@ -62,15 +68,28 @@ export function GraphEdge({
         .add(new Vector3(0, 0.2 + Math.abs(offset) * 0.5, offset));
       points = new QuadraticBezierCurve3(from, middle, to).getPoints(40);
     }
-    const arrow = points[31]!;
-    const direction = points[32]!.clone().sub(points[30]!).normalize();
+    const curve = new CurvePath<Vector3>();
+    for (let i = 1; i < points.length; i++)
+      curve.add(new LineCurve3(points[i - 1]!, points[i]!));
+    const arrow = curve.getPoint(0.82);
+    const direction = curve.getTangent(0.82);
     const rotation = new Quaternion().setFromUnitVectors(
       new Vector3(0, 1, 0),
       direction,
     );
-    return { points, arrow, rotation, midpoint: points[20]! };
-  }, [start, end, edge.source, edge.target, offset]);
-  const hitCurve = useMemo(() => new CatmullRomCurve3(points), [points]);
+    return {
+      points,
+      arrow,
+      rotation,
+      midpoint: route ? new Vector3(...routeLabelPosition(route)) : points[20]!,
+    };
+  }, [start, end, edge.source, edge.target, offset, route]);
+  const hitCurve = useMemo(() => {
+    const curve = new CurvePath<Vector3>();
+    for (let i = 1; i < points.length; i++)
+      curve.add(new LineCurve3(points[i - 1]!, points[i]!));
+    return curve;
+  }, [points]);
   const visual = { ...defaultEdgeStyle(edge.type), ...edge.visual, ...style };
   const opacity = dimmed ? 0.16 : emphasized ? 1 : 0.62;
   return (

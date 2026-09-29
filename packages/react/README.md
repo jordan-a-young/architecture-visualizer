@@ -117,3 +117,30 @@ Options are `direction` (`RIGHT` or `DOWN`), `spacing` (default 3 world units), 
 Existing synchronous `LayoutFunction` callbacks and `computeLayout` still return position maps. A new `LayoutEngine.compute(graph)` may return or resolve `LayoutGeometry`: `positions`, optional `nodeSizes`, and optional `edgePaths` keyed by `getEdgeKey`. `validateLayoutGeometry` checks finite coordinates, positive sizes and valid paths. The viewer shows a basic layout while waiting or on failure and ignores stale results after graph/engine changes. Manual position overrides survive layout completion. Filters continue to hide nodes without recomputing the layout.
 
 The optional subpath is externalized and ELK is an optional peer; the main viewer entry does not import it. ELK is distributed under its own EPL-2.0 license. The default adapter uses its bundled local implementation, with no asset downloads or provider access. The Promise API does not itself move work off the UI thread. For large graphs, provide a host-owned `runner: { layout(graph): Promise<ElkNode> }` backed by a locally bundled worker; the host owns its lifetime. Custom functions/engine configuration are not serialized in saved views.
+
+## Deployment and group boundaries
+
+Expanded groups display a subtle floor, outline, and label. These are generic groups: a consumer can label one "Checkout deployment", "Team A", or "Production" without changing the schema. `parent` creates nested boundaries. A node has one direct group; use ancestors for containment. Overlapping memberships (such as independent team and deployment memberships) are not modeled as multiple boundaries.
+
+```tsx
+<ArchitectureViewer
+  graph={graph}
+  showGroupBoundaries
+  groupStyle={(group) => ({
+    color: group.id === 'checkout' ? '#527e91' : '#788b9f',
+    fillOpacity: 0.06,
+  })}
+/>
+```
+
+`showGroupBoundaries` defaults to true; false hides the visual outlines without removing grouping or collapse controls. `groupStyle(group)` controls color and fill opacity. Boundary labels collapse groups, using the existing controlled/uncontrolled collapse API; summary labels expand them. Floors and outlines do not intercept node/edge clicks or orbit gestures. Labels are keyboard-accessible and included in PNG exports; geometry-only exports keep the floors/outlines but omit labels.
+
+Bounds enclose visible member footprints and nested children, update while dragging, and disappear for empty/fully filtered or collapsed groups. A collapsed child summary remains enclosed by its parent. Boundary labels do not assert deployment facts: consumers are responsible for choosing the grouping. Arbitrary manual placements or custom layouts can create overlapping boundaries; enable a group-aware layout to arrange separate regions. The camera only reframes on layout changes or explicit reset, not on every drag.
+
+## Relationship routing
+
+`edgeRouting="auto"` uses paths supplied by a layout engine and keeps the existing curved rendering for position-only layouts. `"orthogonal"` opts any layout into routing; `"curved"` explicitly retains curves. Routed edges use attachment points on node footprints, rounded bends, directed arrows and labels on their longest segment. Layout and routing remain separate from rendering.
+
+After dragging or collapse, the pure `routeEdges(graph, positions, options?)` helper reuses valid paths and recomputes paths that are stale or intersect a moved node. It preserves original edge keys for selection, parallel relationships and walkthroughs. The bounded orthogonal search prefers short routes, fewer bends and fewer crossings with earlier routes. It never moves manually placed nodes. Overlapping footprints or an exhausted search use a raised fallback; this is not a guarantee of collision-free routing for arbitrary custom 3D geometry. Node labels receive bounded screen-space spacing to reduce overlap without moving nodes. Labels remain camera-dependent; crowded edge/group labels may still overlap.
+
+`RoutingOptions` accepts optional `nodeSizes`, `edgeKeys`, `preferredPaths`, and `basePositions`. `countRouteCrossings(paths)` counts proper segment crossings in the horizontal reference plane; shared endpoints and collinear overlaps are excluded. Engine footprints must match custom geometry. Rendering uses the routed geometry for both visible lines and hit testing. Provider models and graph JSON are unchanged.

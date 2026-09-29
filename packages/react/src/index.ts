@@ -29,6 +29,7 @@ export type {
   NodeRendererProps,
   NodeRendererRegistry,
   EdgeStyle,
+  GroupStyle,
   DetailsPanelProps,
 } from './types.js';
 
@@ -44,3 +45,6 @@ export type {
   ViewerViewState,
   SerializableGraphFilters,
 } from './viewState.js';
+
+export { routeEdges, countRouteCrossings } from './routing.js';
+export type { RoutingOptions } from './routing.js';

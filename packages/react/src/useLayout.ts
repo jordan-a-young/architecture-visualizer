@@ -5,7 +5,7 @@ import type { Layout, LayoutGeometry } from './layout.js';
 
 /** Keep inspection available while computing; never apply a stale engine result. */
 export function useLayout(graph: ArchitectureGraph, layout: Layout) {
-  const fallback = useMemo(
+  const fallback = useMemo<LayoutGeometry>(
     () => ({
       positions: computeLayout(
         graph,
