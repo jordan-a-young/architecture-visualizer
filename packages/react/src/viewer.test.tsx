@@ -24,11 +24,15 @@ vi.mock('./Scene.js', () => ({
     onNodeMove,
     focusRequest,
     selectedEdgeKey,
+    legendEdgeKeys,
+    edgeStyles,
   }: GraphSceneProps) => (
     <div
       data-testid="scene"
       data-selected={selectedId ?? ''}
       data-edge={selectedEdgeKey ?? ''}
+      data-legend-edges={JSON.stringify(legendEdgeKeys)}
+      data-edge-styles={JSON.stringify([...edgeStyles.values()])}
       data-focus={focusRequest?.id ?? ''}
       data-reset={reset}
       data-positions={JSON.stringify(Object.fromEntries(positions))}
@@ -783,5 +787,121 @@ describe('explicit arrangement and camera presets', () => {
       await pending;
     });
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('relationship legend', () => {
+  const styles = {
+    calls: { label: 'Synchronous call', lineStyle: 'dotted' as const },
+  };
+  const highlighted = () =>
+    JSON.parse(screen.getByTestId('scene').getAttribute('data-legend-edges')!);
+  it('is opt-in and shares resolved styles with the scene', () => {
+    const { rerender } = render(
+      <ArchitectureViewer graph={graph} relationshipStyles={styles} />,
+    );
+    expect(screen.queryByText('Relationship legend')).not.toBeInTheDocument();
+    rerender(
+      <ArchitectureViewer
+        graph={graph}
+        relationshipStyles={styles}
+        showRelationshipLegend
+        edgeStyle={() => ({ lineStyle: 'dashed' })}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {
+        name: /Synchronous call, dashed, 1 relationship,/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      JSON.parse(
+        screen.getByTestId('scene').getAttribute('data-edge-styles')!,
+      )[0].lineStyle,
+    ).toBe('dashed');
+  });
+  it('previews and pins relationships without changing controlled selection or saved state', () => {
+    const onSelect = vi.fn(),
+      onEdgeSelect = vi.fn();
+    const ref = createRef<ArchitectureViewerHandle>();
+    render(
+      <ArchitectureViewer
+        ref={ref}
+        graph={graph}
+        selectedNodeId="a"
+        onNodeSelect={onSelect}
+        onEdgeSelect={onEdgeSelect}
+        relationshipStyles={styles}
+        showRelationshipLegend
+      />,
+    );
+    const before = ref.current!.getViewState();
+    const entry = screen.getByRole('button', {
+      name: /Synchronous call, dotted/,
+    });
+    fireEvent.pointerEnter(entry, { pointerType: 'mouse' });
+    expect(highlighted()).toEqual([getEdgeKey(graph.edges[0]!, 0)]);
+    fireEvent.pointerLeave(entry);
+    expect(highlighted()).toEqual([]);
+    fireEvent.focus(entry);
+    expect(highlighted()).toHaveLength(1);
+    fireEvent.click(entry);
+    fireEvent.blur(entry);
+    expect(entry).toHaveAttribute('aria-pressed', 'true');
+    expect(highlighted()).toHaveLength(1);
+    fireEvent.keyDown(entry, { key: 'Escape' });
+    expect(highlighted()).toEqual([]);
+    expect(entry).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-selected', 'a');
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onEdgeSelect).not.toHaveBeenCalled();
+    expect(ref.current!.getViewState()).toEqual(before);
+  });
+  it('uses original edges after collapse and clears hidden legend highlights', () => {
+    const grouped = {
+      ...graph,
+      groups: [{ id: 'g', label: 'Frontend group' }],
+      nodes: graph.nodes.map((node) =>
+        node.id === 'a' ? { ...node, group: 'g' } : node,
+      ),
+    };
+    const original = vi.fn((edge: (typeof graph.edges)[number]) => ({
+      lineStyle: edge.source === 'a' ? ('dotted' as const) : ('solid' as const),
+    }));
+    const { rerender } = render(
+      <ArchitectureViewer
+        graph={grouped}
+        edgeStyle={original}
+        relationshipStyles={styles}
+        showRelationshipLegend
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Collapse Frontend group' }),
+    );
+    expect(original).toHaveBeenLastCalledWith(graph.edges[0]);
+    const entry = screen.getByRole('button', {
+      name: /Synchronous call, dotted/,
+    });
+    fireEvent.click(entry);
+    expect(highlighted()).toHaveLength(1);
+    rerender(
+      <ArchitectureViewer
+        graph={grouped}
+        relationshipStyles={styles}
+        showRelationshipLegend
+        filters={{ types: ['service'] }}
+      />,
+    );
+    expect(screen.queryByText('Relationship legend')).not.toBeInTheDocument();
+    expect(highlighted()).toEqual([]);
+    rerender(
+      <ArchitectureViewer
+        graph={grouped}
+        relationshipStyles={styles}
+        showRelationshipLegend
+      />,
+    );
+    expect(highlighted()).toEqual([]);
   });
 });

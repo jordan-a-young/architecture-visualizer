@@ -7,15 +7,23 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import type { PointsMaterial } from 'three';
 import type { ArchitectureEdge } from 'archgraph-core';
 import type { Position3 } from './layout.js';
 import { roundRoute, routeLabelPosition } from './routeGeometry.js';
-import type { EdgeStyle } from './types.js';
-const palette = ['#8394ab', '#6c9693', '#a59375', '#9383a4'];
-export function defaultEdgeStyle(type = ''): EdgeStyle {
-  let hash = 0;
-  for (const char of type) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return { color: palette[hash % palette.length], width: 1.4, dashed: false };
+import type { ResolvedEdgeStyle } from './edgeStyles.js';
+// Keep Three's color pipeline intact while making procedural point sprites round.
+function roundDots(shader: Parameters<PointsMaterial['onBeforeCompile']>[0]) {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <opaque_fragment>',
+    `
+    vec2 p = 2.0 * gl_PointCoord - 1.0;
+    float radius = dot(p, p);
+    float smoothing = fwidth(radius);
+    diffuseColor.a *= 1.0 - smoothstep(1.0 - smoothing, 1.0 + smoothing, radius);
+    #include <opaque_fragment>
+  `,
+  );
 }
 export function GraphEdge({
   edge,
@@ -39,7 +47,7 @@ export function GraphEdge({
   emphasized: boolean;
   dimmed: boolean;
   label: boolean;
-  style?: EdgeStyle;
+  style: ResolvedEdgeStyle;
   offset?: number;
 }) {
   const { points, arrow, rotation, midpoint } = useMemo(() => {
@@ -90,7 +98,22 @@ export function GraphEdge({
       curve.add(new LineCurve3(points[i - 1]!, points[i]!));
     return curve;
   }, [points]);
-  const visual = { ...defaultEdgeStyle(edge.type), ...edge.visual, ...style };
+  const dots = useMemo(() => {
+    if (style.lineStyle !== 'dotted') return null;
+    // Arc-length samples keep round dots evenly spaced through bends. Bound the
+    // geometry allocation for unusually long custom routes.
+    const count = Math.max(
+      1,
+      Math.min(2048, Math.ceil(hitCurve.getLength() / 0.24)),
+    );
+    return new Float32Array(
+      Array.from({ length: count + 1 }, (_, i) =>
+        hitCurve.getPoint(i / count).toArray(),
+      ).flat(),
+    );
+  }, [hitCurve, style.lineStyle]);
+  const visual = style;
+  const lineWidth = visual.width + (emphasized ? 1 : 0);
   const opacity = dimmed ? 0.16 : emphasized ? 1 : 0.62;
   return (
     <group
@@ -108,17 +131,34 @@ export function GraphEdge({
           colorWrite={false}
         />
       </mesh>
-      <Line
-        points={points}
-        color={visual.color}
-        lineWidth={emphasized ? (visual.width ?? 1.4) + 1 : visual.width}
-        dashed={visual.dashed}
-        dashSize={0.25}
-        gapSize={0.16}
-        transparent
-        opacity={opacity}
-        raycast={() => null}
-      />
+      {dots ? (
+        <points raycast={() => null}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[dots, 3]} />
+          </bufferGeometry>
+          <pointsMaterial
+            onBeforeCompile={roundDots}
+            color={visual.color}
+            size={Math.max(2, lineWidth)}
+            sizeAttenuation={false}
+            transparent
+            opacity={opacity}
+            depthWrite={false}
+          />
+        </points>
+      ) : (
+        <Line
+          points={points}
+          color={visual.color}
+          lineWidth={lineWidth}
+          dashed={visual.lineStyle === 'dashed'}
+          dashSize={0.25}
+          gapSize={0.16}
+          transparent
+          opacity={opacity}
+          raycast={() => null}
+        />
+      )}
       <mesh position={arrow} quaternion={rotation} raycast={() => null}>
         <coneGeometry args={[0.12, 0.32, 10]} />
         <meshBasicMaterial color={visual.color} transparent opacity={opacity} />

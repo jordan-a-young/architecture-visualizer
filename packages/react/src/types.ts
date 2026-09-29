@@ -25,11 +25,23 @@ export interface GroupStyle {
   color?: string;
   fillOpacity?: number;
 }
+export type EdgeLineStyle = 'solid' | 'dashed' | 'dotted';
 export interface EdgeStyle {
   color?: string;
   width?: number;
+  /** Takes precedence over dashed within the same style definition. */
+  lineStyle?: EdgeLineStyle;
+  /** Legacy shorthand: true = dashed, false = solid. */
   dashed?: boolean;
 }
+export interface RelationshipStyle extends EdgeStyle {
+  /** Consumer-defined legend text. Defaults to the relationship type. */
+  label?: string;
+  description?: string;
+}
+export type RelationshipStyleRegistry = Readonly<
+  Record<string, RelationshipStyle>
+>;
 export interface DetailsPanelProps {
   graph: ArchitectureGraph;
   node: ArchitectureNode | null;
@@ -92,6 +104,10 @@ export interface ArchitectureViewerProps {
   onNodeDragEnd?: (node: ArchitectureNode, position: Position3) => void;
   nodeRenderers?: NodeRendererRegistry;
   edgeStyle?: (edge: ArchitectureEdge) => EdgeStyle;
+  /** Shared visual defaults and legend descriptions, keyed by arbitrary edge type. */
+  relationshipStyles?: RelationshipStyleRegistry;
+  /** Show an interactive legend below the canvas. Defaults to false. */
+  showRelationshipLegend?: boolean;
   showEdgeLabels?: boolean;
   /** Compact captions: auto hides crowded/tiny nodes; selected shows hovered, selected, focused or highlighted nodes. */
   nodeLabelMode?: NodeLabelMode;
