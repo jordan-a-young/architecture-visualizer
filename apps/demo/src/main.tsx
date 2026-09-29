@@ -4,7 +4,7 @@ import { ArchitectureGraphSchema } from 'archgraph-core';
 import { createElkLayout } from 'archgraph-react/elk';
 import { ArchitectureViewer, getNodeColor } from 'archgraph-react';
 import 'archgraph-react/styles.css';
-import type { ArchitectureViewerHandle } from 'archgraph-react';
+import type { ArchitectureViewerHandle, NodeLabelMode } from 'archgraph-react';
 import { SavedViews } from './SavedViews';
 import sample from '../../../examples/distributed-system.json';
 import './demo.css';
@@ -26,6 +26,7 @@ function Demo() {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(false);
+  const [nodeLabelMode, setNodeLabelMode] = useState<NodeLabelMode>('auto');
   const filters = useMemo(
     () => (type === 'all' ? {} : { types: [type] }),
     [type],
@@ -87,6 +88,17 @@ function Demo() {
       </div>
       <div className="layoutbar" role="group" aria-label="Layout settings">
         <label>
+          Node labels{' '}
+          <select
+            value={nodeLabelMode}
+            onChange={(e) => setNodeLabelMode(e.target.value as NodeLabelMode)}
+          >
+            <option value="auto">Automatic</option>
+            <option value="selected">Hover / selected</option>
+            <option value="none">Hidden</option>
+          </select>
+        </label>
+        <label>
           Layout{' '}
           <select
             value={layoutMode}
@@ -134,6 +146,7 @@ function Demo() {
           graph={graph}
           layout={layout}
           showGroupBoundaries={boundaries}
+          nodeLabelMode={nodeLabelMode}
           onFiltersChange={(next) =>
             setType(next.types?.length === 1 ? next.types[0]! : 'all')
           }

@@ -8,6 +8,7 @@ import type {
   NodeRendererProps,
   NodePositions,
   WalkthroughState,
+  NodeLabelMode,
 } from 'archgraph-react';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -45,9 +46,22 @@ const groupedGraph: ArchitectureGraph = {
       node.id === 'a' ? 'services' : node.id === 'b' ? 'domain' : undefined,
   })),
 };
-function Custom({ color, opacity }: NodeRendererProps) {
+const labelGraph: ArchitectureGraph = {
+  ...graph,
+  nodes: graph.nodes.map((node) => ({
+    ...node,
+    type: 'custom',
+    visual: { color: '#e34d57' },
+    label:
+      node.id === 'a'
+        ? 'A very long service name that should stay readable in the inspector'
+        : node.label,
+    metadata: { tall: node.id === 'a' },
+  })),
+};
+function Custom({ node, color, opacity }: NodeRendererProps) {
   return (
-    <mesh>
+    <mesh scale={node.metadata?.tall ? [1.4, 3, 1.4] : 1}>
       <sphereGeometry args={[0.6, 24, 24]} />
       <meshStandardMaterial color={color} transparent opacity={opacity} />
     </mesh>
@@ -63,6 +77,7 @@ function Fixture() {
   const [positions, setPositions] = useState<NodePositions>({});
   const [dragEnds, setDragEnds] = useState(0);
   const [enabled, setEnabled] = useState(true);
+  const [nodeLabelMode, setNodeLabelMode] = useState<NodeLabelMode>('auto');
   const controlled = new URLSearchParams(location.search).has('controlled');
   const accept = !new URLSearchParams(location.search).has('reject');
   const exportScene = async () => {
@@ -100,6 +115,17 @@ function Fixture() {
       <button onClick={exportScene}>Export without labels</button>
       <button onClick={() => setFiltered(!filtered)}>Toggle filter</button>
       <button onClick={() => setEnabled(!enabled)}>Toggle dragging</button>
+      <label>
+        Node labels{' '}
+        <select
+          value={nodeLabelMode}
+          onChange={(e) => setNodeLabelMode(e.target.value as NodeLabelMode)}
+        >
+          <option value="auto">Automatic</option>
+          <option value="selected">Hover / selected</option>
+          <option value="none">Hidden</option>
+        </select>
+      </label>
       <output aria-label="Export error">{error}</output>
       <output style={{ display: 'none' }} aria-label="Positions">
         {JSON.stringify(positions)}
@@ -110,6 +136,7 @@ function Fixture() {
       <div style={{ height: 640, width: '100%' }}>
         <ArchitectureViewer
           ref={viewer}
+          nodeLabelMode={nodeLabelMode}
           layout={
             new URLSearchParams(location.search).has('layout')
               ? advancedLayout
@@ -121,11 +148,13 @@ function Fixture() {
               : 'auto'
           }
           graph={
-            new URLSearchParams(location.search).has('groups')
-              ? groupedGraph
-              : new URLSearchParams(location.search).has('walkthrough')
-                ? walkthroughGraph
-                : graph
+            new URLSearchParams(location.search).has('labels')
+              ? labelGraph
+              : new URLSearchParams(location.search).has('groups')
+                ? groupedGraph
+                : new URLSearchParams(location.search).has('walkthrough')
+                  ? walkthroughGraph
+                  : graph
           }
           collapsedGroupIds={controlled ? collapsed : undefined}
           onCollapsedGroupsChange={(ids) => {
