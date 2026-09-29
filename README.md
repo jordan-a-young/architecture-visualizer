@@ -191,7 +191,7 @@ The viewer validates graph input before mounting the scene. Invalid graphs show 
 
 Filtering prunes the scene; details use the original graph to preserve architectural context. Filtered-out relationships are shown but cannot be selected until the host changes its filters. A selection hidden by filtering is visually cleared without firing a synthetic callback; it reappears if made visible again. This preserves externally controlled selection.
 
-Drag nodes in the demo to rearrange them; drag the background to orbit. Edges follow moved nodes, and Escape cancels a drag. Positions survive filtering and camera resets. Reset layout restores automatic positions. Positions belong to view state, not the architecture schema; controlled applications can save them separately through `onNodePositionsChange`. See the [React package guide](packages/react/README.md) for controlled dragging and screenshot examples.
+Drag nodes in the demo to rearrange them; drag the background to orbit. Edges follow moved nodes, and Escape cancels a drag, restoring the previous override or returning the node to automatic layout. Positions survive filtering and camera resets. Reset layout restores automatic positions. Positions belong to view state, not the architecture schema; controlled applications can save them separately through `onNodePositionsChange`. See the [React package guide](packages/react/README.md) for controlled dragging and screenshot examples.
 
 ## Custom rendering and layout
 
@@ -272,3 +272,5 @@ Existing groups can describe nodes deployed together: for example `groups: [{ id
 Advanced layouts supply rounded orthogonal routes with attachment points and obstacle avoidance. Set `edgeRouting="orthogonal"` to enable routing with a custom position-only layout, or `"curved"` for the original appearance. Moved nodes and collapsed groups retain inspectable original relationships. See [the React documentation](packages/react/README.md#relationship-routing) for routing limits and extension points.
 
 The demo now shows nested deployment groups and offers advanced/basic layout, direction, spacing, and boundary visibility controls. **Top view** makes route crossings easier to assess; **Arrange visible** explicitly compacts the filtered graph while keeping manual overrides. Resulting positions are saved with the view. **Reset layout** releases these overrides; **Reset camera** returns to the angled overview.
+
+Resizing and fullscreen preserve your camera position and orbit target. Automatic layout completion also preserves a view you have orbited, panned, zoomed, focused or restored. Use **Reset camera** or **Top view** to fit the visible graph again.
