@@ -48,7 +48,7 @@ function paintLabel(
     context.lineWidth = border;
     context.stroke();
   }
-  // Measure actual text runs so padding, line height and the two-line node label
+  // Measure actual text runs so padding, line height and compact node captions
   // remain aligned with their DOM representation. No HTML serialization or assets.
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
@@ -61,11 +61,35 @@ function paintLabel(
     context.font = `${textStyle.fontStyle} ${textStyle.fontWeight} ${textStyle.fontSize} ${textStyle.fontFamily}`;
     context.fillStyle = textStyle.color;
     context.textBaseline = 'middle';
+    let displayed = text.textContent;
+    const textBox = text.parentElement.getBoundingClientRect();
+    const ellipsis = textStyle.textOverflow === 'ellipsis';
+    if (ellipsis && context.measureText(displayed).width > textBox.width) {
+      const characters = Array.from(displayed);
+      while (
+        characters.length &&
+        context.measureText(characters.join('') + '…').width > textBox.width
+      )
+        characters.pop();
+      displayed = characters.join('') + '…';
+    }
+    context.save();
+    if (ellipsis) {
+      context.beginPath();
+      context.rect(
+        textBox.left - origin.left,
+        textBox.top - origin.top,
+        textBox.width,
+        textBox.height,
+      );
+      context.clip();
+    }
     context.fillText(
-      text.textContent,
+      displayed,
       textRect.left - origin.left,
       textRect.top - origin.top + textRect.height / 2,
     );
+    context.restore();
   }
   context.restore();
 }

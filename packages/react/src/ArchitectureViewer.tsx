@@ -96,6 +96,7 @@ const ValidViewer = forwardRef<
     nodeRenderers,
     edgeStyle,
     showEdgeLabels = false,
+    nodeLabelMode = 'auto',
     showDetailsPanel = true,
     showScreenshotButton = true,
     renderDetails,
@@ -545,6 +546,7 @@ const ValidViewer = forwardRef<
                 : undefined
             }
             showEdgeLabels={showEdgeLabels}
+            nodeLabelMode={nodeLabelMode}
           />
         </SceneBoundary>
         {!visible.nodes.length && (
