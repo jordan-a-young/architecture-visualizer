@@ -6,6 +6,7 @@ import { ArchitectureViewer, getNodeColor } from 'archgraph-react';
 import 'archgraph-react/styles.css';
 import type { ArchitectureViewerHandle, NodeLabelMode } from 'archgraph-react';
 import { SavedViews } from './SavedViews';
+import { relationshipStyles } from './relationshipStyles';
 import sample from '../../../examples/distributed-system.json';
 import './demo.css';
 const graph = ArchitectureGraphSchema.parse(sample);
@@ -17,6 +18,7 @@ function Demo() {
   const [direction, setDirection] = useState<'RIGHT' | 'DOWN'>('RIGHT');
   const [spacing, setSpacing] = useState(3);
   const [boundaries, setBoundaries] = useState(true);
+  const [showLegend, setShowLegend] = useState(true);
   const layout = useMemo(
     () =>
       layoutMode === 'basic'
@@ -88,6 +90,14 @@ function Demo() {
       </div>
       <div className="layoutbar" role="group" aria-label="Layout settings">
         <label>
+          <input
+            type="checkbox"
+            checked={showLegend}
+            onChange={(event) => setShowLegend(event.target.checked)}
+          />
+          Relationship legend
+        </label>
+        <label>
           Node labels{' '}
           <select
             value={nodeLabelMode}
@@ -146,6 +156,8 @@ function Demo() {
           graph={graph}
           layout={layout}
           showGroupBoundaries={boundaries}
+          relationshipStyles={relationshipStyles}
+          showRelationshipLegend={showLegend}
           nodeLabelMode={nodeLabelMode}
           onFiltersChange={(next) =>
             setType(next.types?.length === 1 ? next.types[0]! : 'all')

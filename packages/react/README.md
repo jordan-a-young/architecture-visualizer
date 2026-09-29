@@ -32,9 +32,49 @@ Placement reserves screen-space bounds for all visible node geometry, including 
 
 The demo exposes a **Node labels** selector. The library prop belongs to host configuration and is not saved in `ViewerViewState`. PNG exports use the current visible captions, positions and truncation; `includeLabels: false` omits all built-in labels. No graph or layout schema changes are required.
 
+## Relationship styles and legend
+
+Configure arbitrary relationship types with `relationshipStyles`. The library assigns no meaning to a pattern; consumers choose the names and conventions for their graph.
+
+```tsx
+import type { RelationshipStyleRegistry } from 'archgraph-react';
+
+const relationshipStyles: RelationshipStyleRegistry = {
+  calls: { label: 'Synchronous call', color: '#597ca8', lineStyle: 'solid' },
+  publishes: {
+    label: 'Event publication',
+    description: 'Asynchronous messaging',
+    color: '#89729e',
+    lineStyle: 'dashed',
+  },
+  'depends-on': {
+    label: 'Code dependency',
+    color: '#7c8796',
+    lineStyle: 'dotted',
+  },
+};
+
+<ArchitectureViewer
+  graph={graph}
+  relationshipStyles={relationshipStyles}
+  showRelationshipLegend
+  edgeStyle={(edge) => (edge.metadata?.critical ? { width: 2.5 } : {})}
+/>;
+```
+
+`RelationshipStyle` extends `EdgeStyle` with optional `label` and `description`. `EdgeStyle` supports `color`, `width`, `lineStyle: 'solid' | 'dashed' | 'dotted'`, and the existing `dashed` boolean. All styles retain arrowheads, selection and continuous click targets, including the gaps between dashes or dots. Dots have a minimum diameter of 2 screen pixels. Pattern spacing follows world distance, so gaps change with zoom; very distant routes may appear continuous. Dot allocation is bounded for unusually long routes.
+
+Style precedence, from lowest to highest, is **deterministic defaults → relationship type configuration → original `edge.visual` → `edgeStyle(edge)`**. Omitted properties preserve earlier values. Within one layer, `lineStyle` wins over `dashed`; a later legacy `dashed: true` or `false` overrides an earlier layer's pattern. Unknown and untyped relationships keep the existing default treatment. Callbacks receive original edges even when groups are collapsed. Replace configuration references when changing styles.
+
+`showRelationshipLegend` defaults to `false`; the demo enables it with a checkbox. The collapsible, scrollable legend sits below the canvas and derives its swatches and counts from visible relationships after filtering and group collapse. Per-edge overrides produce separate swatches when their effective styles differ, so one type can have multiple entries. Unused configuration entries are omitted. Labels fall back to the edge type, or “Relationship” for an untyped edge; descriptions appear in native tooltips.
+
+Hover or keyboard focus previews a style; click, Enter or Space pins/unpins it. Matching edges brighten while others fade, preserving selected/highlighted edges and walkthrough emphasis. This never changes selection, filters, node appearance or which edge labels are shown. Escape inside an active legend clears its highlight without clearing selection. Closing/hiding the legend or removing an entry clears the corresponding highlight. Controls also work in the WebGL inspector fallback.
+
+Style configuration and legend highlighting are not included in `ViewerViewState`. The core JSON schema is unchanged: graph `edge.visual` still supports `color`, `width` and `dashed`; configure new `lineStyle` values through React props. PNG captures retain rendered line patterns and current emphasis, but omit the DOM legend below the canvas.
+
 ## Screenshot export
 
-The **Download PNG** button saves the current camera view, including visible nodes, relationships, selection styling, and built-in labels. It excludes the toolbar and details panel. Set `showScreenshotButton={false}` to hide the button. Capture uses the current canvas pixel resolution (including its device pixel ratio), with no network requests or persistent drawing buffer.
+The **Download PNG** button saves the current camera view, including visible nodes, relationships, selection styling, and built-in labels. It excludes the toolbar, relationship legend and details panel. Set `showScreenshotButton={false}` to hide the button. Capture uses the current canvas pixel resolution (including its device pixel ratio), with no network requests or persistent drawing buffer.
 
 ```tsx
 const viewer = useRef<ArchitectureViewerHandle>(null);

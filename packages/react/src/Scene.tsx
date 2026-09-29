@@ -3,6 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box3, PerspectiveCamera, Vector3 } from 'three';
 import type { Group } from 'three';
+import type { ResolvedEdgeStyle } from './edgeStyles.js';
 import type { ComponentRef } from 'react';
 import type {
   ArchitectureGraph,
@@ -188,7 +189,8 @@ export interface GraphSceneProps {
   reset: number;
   highlightedNodeIds: readonly string[];
   nodeRenderers?: ArchitectureViewerProps['nodeRenderers'];
-  edgeStyle?: ArchitectureViewerProps['edgeStyle'];
+  edgeStyles: ReadonlyMap<ArchitectureEdge, ResolvedEdgeStyle>;
+  legendEdgeKeys?: readonly string[];
   showEdgeLabels?: boolean;
   nodeLabelMode?: ArchitectureViewerProps['nodeLabelMode'];
 }
@@ -206,7 +208,8 @@ function SupportedScene({
   reset,
   highlightedNodeIds,
   nodeRenderers,
-  edgeStyle,
+  edgeStyles,
+  legendEdgeKeys = [],
   showEdgeLabels,
   nodeLabelMode = 'auto',
   onCaptureReady,
@@ -308,11 +311,13 @@ function SupportedScene({
           JSON.stringify([edge.source, edge.target].sort()),
         )!;
         const offset = (siblings.indexOf(i) - (siblings.length - 1) / 2) * 0.8;
-        const emphasized =
+        const selectionEmphasis =
           (!pathActive &&
             (selectedId === edge.source || selectedId === edge.target)) ||
           selectedEdgeKey === edgeKeys.get(edge) ||
           highlightedEdgeKeys.includes(edgeKeys.get(edge)!);
+        const emphasized =
+          selectionEmphasis || legendEdgeKeys.includes(edgeKeys.get(edge)!);
         return (
           <GraphEdge
             key={edge.id ?? `edge-${i}`}
@@ -323,10 +328,10 @@ function SupportedScene({
             start={positions.get(edge.source)!}
             end={positions.get(edge.target)!}
             emphasized={emphasized}
-            dimmed={hasSelection && !emphasized}
-            label={!!showEdgeLabels || emphasized}
+            dimmed={(hasSelection || legendEdgeKeys.length > 0) && !emphasized}
+            label={!!showEdgeLabels || selectionEmphasis}
             offset={offset}
-            style={edgeStyle?.(edge)}
+            style={edgeStyles.get(edge)!}
           />
         );
       })}
