@@ -1,17 +1,100 @@
 import { StrictMode, useMemo, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArchitectureGraphSchema } from 'archgraph-core';
+import { ArchitectureGraphSchema, type ArchitectureGraph } from 'archgraph-core';
 import { createElkLayout } from 'archgraph-react/elk';
 import { ArchitectureViewer, getNodeColor } from 'archgraph-react';
+import type { LayoutFunction } from 'archgraph-react';
 import 'archgraph-react/styles.css';
 import type { ArchitectureViewerHandle, NodeLabelMode } from 'archgraph-react';
 import { SavedViews } from './SavedViews';
-import sample from '../../../examples/distributed-system.json';
+import distributedSystem from '../../../examples/distributed-system.json';
+import avExtendPlatform from '../../../examples/av-extend-platform.json';
+import extendConsoleRuntime from '../../../examples/extend-console-runtime.json';
+import extendConsoleAdminApi from '../../../examples/extend-console-admin-api.json';
+import extendConsoleLocalDev from '../../../examples/extend-console-local-dev.json';
 import './demo.css';
-const graph = ArchitectureGraphSchema.parse(sample);
-const types = [...new Set(graph.nodes.map((node) => node.type))].sort();
+
+const GRAPHS: Record<string, { raw: unknown; title: string; subtitle: string }> = {
+  'av-extend-platform': {
+    raw: avExtendPlatform,
+    title: 'Availity Extend — Request Flow',
+    subtitle: 'How requests flow from av-extend-ui through Tyk, extend-gateway, and upstream services.',
+  },
+  'extend-console-runtime': {
+    raw: extendConsoleRuntime,
+    title: 'extend-console — Runtime Architecture',
+    subtitle: 'Browser → S3 → internal-command-center → Tyk → extend-gateway admin API → data layer.',
+  },
+  'extend-console-admin-api': {
+    raw: extendConsoleAdminApi,
+    title: 'extend-console — Admin API Surface',
+    subtitle: 'All /admin endpoints by capability: consumers, rate limits, payer routes, Redis, EPDM, logs.',
+  },
+  'extend-console-local-dev': {
+    raw: extendConsoleLocalDev,
+    title: 'extend-console — Local Dev Setup',
+    subtitle: 'PROXY_MODE=local (local stack) vs PROXY_MODE=devcli (deployed env via dev-cli proxy).',
+  },
+  'distributed-system': {
+    raw: distributedSystem,
+    title: 'Commerce Platform (Example)',
+    subtitle: 'One graph. A shared understanding of your system.',
+  },
+};
+
+const parsedGraphs: Record<string, ArchitectureGraph> = Object.fromEntries(
+  Object.entries(GRAPHS).map(([key, { raw }]) => [key, ArchitectureGraphSchema.parse(raw)]),
+);
+
+/**
+ * Custom layout for the extend platform request flow graph.
+ * Tyk is centered at the origin, clients fan above it,
+ * gateway + backend services spread below, data layer at the bottom.
+ */
+const extendPlatformLayout: LayoutFunction = () => {
+  // Z spreads nodes left↔right; X pushes rows front↔back (depth in view)
+  // Row spacing on X, column spacing on Z
+  const row = (x: number, z: number): [number, number, number] => [x, 0, z];
+  return new Map([
+    // Row 0 — clients (centered above Tyk)
+    ['extend-admin-ui',  row( 12, -4)],
+    ['browser',          row( 12,  4)],
+
+    // Row 1 — edge (Tyk dead center, Thales to the side)
+    ['tyk',              row(  6,  0)],
+    ['thales-auth',      row(  6, 12)],
+
+    // Row 2 — gateway + directly-routed backend services
+    ['extend-gateway',   row(  0, -4)],
+    ['av-extend-mock',   row(  0,  4)],
+    ['av-extend-lab',    row(  0, 10)],
+    ['av-extend-backend',row(  0, 16)],
+    ['av-extend-mcp',    row(  6, 20)],   // bypasses gateway, stays near edge row
+    ['developer-hub',    row( 10, 20)],   // bypasses Tyk entirely, floats right
+
+    // Row 3 — upstream payers (far left, away from data layer)
+    ['payers',           row( -6, -16)],
+
+    // Row 4 — data layer (spread evenly below gateway)
+    ['aurora-pg',        row(-16,  -4)],
+    ['redis',            row(-16,   2)],
+    ['s3-gateway',       row(-16,   8)],
+    ['firehose',         row(-16,  14)],
+    ['s3-backend',       row(-16,  20)],
+
+    // Supporting infrastructure — float right, out of the main flow
+    ['av-extend-access-configs', row(  4,  28)],
+    ['av-extend-api-contracts',  row(-10,  28)],
+  ]);
+};
+
+const LAYOUTS: Partial<Record<string, LayoutFunction>> = {
+  'av-extend-platform': extendPlatformLayout,
+};
+
 function Demo() {
   const viewer = useRef<ArchitectureViewerHandle>(null);
+  const [graphKey, setGraphKey] = useState<string>('av-extend-platform');
   const [type, setType] = useState('all');
   const [layoutMode, setLayoutMode] = useState('advanced');
   const [direction, setDirection] = useState<'RIGHT' | 'DOWN'>('RIGHT');
@@ -27,10 +110,25 @@ function Demo() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(false);
   const [nodeLabelMode, setNodeLabelMode] = useState<NodeLabelMode>('auto');
+
+  const graph = parsedGraphs[graphKey]!;
+  const meta = GRAPHS[graphKey]!;
+  const types = useMemo(
+    () => [...new Set(graph.nodes.map((node) => node.type))].sort(),
+    [graph],
+  );
+
   const filters = useMemo(
     () => (type === 'all' ? {} : { types: [type] }),
     [type],
   );
+
+  function handleGraphChange(key: string) {
+    setGraphKey(key);
+    setType('all');
+    setSelectedId(null);
+  }
+
   return (
     <main>
       <header>
@@ -48,8 +146,8 @@ function Demo() {
       <section className="page-heading">
         <div>
           <p className="eyebrow">SYSTEM EXPLORER</p>
-          <h1>Commerce Platform</h1>
-          <p>One graph. A shared understanding of your system.</p>
+          <h1>{meta.title}</h1>
+          <p>{meta.subtitle}</p>
         </div>
         <div className="sample-badge">
           <span />
@@ -58,7 +156,20 @@ function Demo() {
       </section>
       <div className="filterbar">
         <div>
-          <span className="filter-title">VIEW</span>
+          <span className="filter-title">GRAPH</span>
+          <label htmlFor="graph-select">Dataset</label>
+          <select
+            id="graph-select"
+            value={graphKey}
+            onChange={(e) => handleGraphChange(e.target.value)}
+          >
+            {Object.entries(GRAPHS).map(([key, { title }]) => (
+              <option key={key} value={key}>
+                {title}
+              </option>
+            ))}
+          </select>
+          <span className="filter-title" style={{ marginLeft: '1rem' }}>VIEW</span>
           <label htmlFor="type-filter">Node type</label>
           <select
             id="type-filter"
@@ -69,9 +180,9 @@ function Demo() {
             }}
           >
             <option value="all">All types</option>
-            {types.map((type) => (
-              <option key={type} value={type}>
-                {type}
+            {types.map((t) => (
+              <option key={t} value={t}>
+                {t}
               </option>
             ))}
           </select>
@@ -144,7 +255,7 @@ function Demo() {
         <ArchitectureViewer
           ref={viewer}
           graph={graph}
-          layout={layout}
+          layout={LAYOUTS[graphKey] ?? layout}
           showGroupBoundaries={boundaries}
           nodeLabelMode={nodeLabelMode}
           onFiltersChange={(next) =>
@@ -159,10 +270,10 @@ function Demo() {
       </div>
       <footer>
         <ul aria-label="Node type legend">
-          {types.map((type) => (
-            <li key={type}>
-              <i style={{ background: getNodeColor(type) }} />
-              {type}
+          {types.map((t) => (
+            <li key={t}>
+              <i style={{ background: getNodeColor(t) }} />
+              {t}
             </li>
           ))}
         </ul>
@@ -171,6 +282,7 @@ function Demo() {
     </main>
   );
 }
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Demo />

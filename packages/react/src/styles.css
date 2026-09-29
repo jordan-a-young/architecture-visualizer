@@ -223,6 +223,7 @@
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  pointer-events: auto;
 }
 .av-toolbar button:disabled {
   cursor: default;
@@ -237,6 +238,22 @@
   padding: 10px;
   background: #fff5f5;
   color: #783d3d;
+}
+
+/* Fullscreen: viewer fills the screen */
+.av-viewer:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  border-radius: 0;
+  border: none;
+}
+.av-viewer:-webkit-full-screen {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  border-radius: 0;
+  border: none;
 }
 .av-node-list {
   position: absolute;

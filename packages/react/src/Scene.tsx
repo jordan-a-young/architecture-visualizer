@@ -91,7 +91,7 @@ function CameraRig({
     const direction =
       preset === 'top'
         ? new Vector3(0, 1, 0.001).normalize()
-        : new Vector3(0, 1.3, 1).normalize();
+        : new Vector3(0, 1.6, 0.6).normalize();
     const tangent = Math.tan(fov / 2);
     const projectedHeight = extent.y * direction.z + extent.z * direction.y;
     const depth = extent.y * direction.y + extent.z * direction.z;
@@ -259,7 +259,7 @@ function SupportedScene({
     <Canvas
       frameloop="demand"
       dpr={[1, 2]}
-      camera={{ position: [10, 18, 24], fov: 42 }}
+      camera={{ position: [0, 30, 12], fov: 42 }}
       onPointerMissed={(event) => {
         if (event.type === 'click') onSelect(null);
       }}
@@ -365,14 +365,24 @@ function SupportedScene({
   );
 }
 
-/** Probe WebGL2 before mounting R3F, whose async renderer initialization can reject outside a React boundary. */
+/** Probe WebGL before mounting R3F. Tries webgl2 then webgl — both work with R3F.
+ * Falls back only if neither context is available at all (e.g. headless or explicitly disabled).
+ * R3F's own `fallback` prop handles runtime failures inside the Canvas. */
 export function GraphScene(props: GraphSceneProps) {
   const [supported, setSupported] = useState<boolean | null>(null);
   useEffect(() => {
     try {
-      const context = document.createElement('canvas').getContext('webgl2');
-      setSupported(context !== null);
-      context?.getExtension('WEBGL_lose_context')?.loseContext();
+      const canvas = document.createElement('canvas');
+      const ctx =
+        canvas.getContext('webgl2') ??
+        canvas.getContext('webgl') ??
+        canvas.getContext('experimental-webgl');
+      setSupported(ctx !== null);
+      if (ctx) {
+        (ctx as WebGLRenderingContext)
+          .getExtension('WEBGL_lose_context')
+          ?.loseContext();
+      }
     } catch {
       setSupported(false);
     }
@@ -386,7 +396,7 @@ export function GraphScene(props: GraphSceneProps) {
   if (!supported)
     return (
       <p role="status" className="av-scene-fallback">
-        3D rendering requires WebGL2. Use Browse nodes to inspect this graph.
+        3D rendering requires WebGL. Use Browse nodes to inspect this graph.
       </p>
     );
   return <SupportedScene {...props} />;

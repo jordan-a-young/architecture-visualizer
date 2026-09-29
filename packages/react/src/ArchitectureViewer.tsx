@@ -1,12 +1,12 @@
 import {
   Component,
   forwardRef,
-  useImperativeHandle,
-  useMemo,
-  useState,
-  useRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import type { ReactNode } from 'react';
 import { getNode, validateGraph } from 'archgraph-core';
@@ -25,7 +25,7 @@ import { GraphScene } from './Scene.js';
 import { parseViewState } from './viewState.js';
 import type { CameraState, ViewerViewState } from './viewState.js';
 import type { GraphFilterOptions } from 'archgraph-core';
-import { Walkthrough } from './Walkthrough.js';
+import { Walkthrough } from './WalkthroughPanel.js';
 import { resolveWalkthrough } from './walkthrough.js';
 import type { WalkthroughState } from './types.js';
 import { getEdgeKey } from './edgeKey.js';
@@ -142,6 +142,23 @@ const ValidViewer = forwardRef<
       ),
     [graph, walkthrough, internalWalkthrough],
   );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const viewerRef = useRef<HTMLDivElement>(null);
+
+  // Keep fullscreen button state in sync with Escape / browser UI exits
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      viewerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
   const changeWalkthrough = (state: WalkthroughState | null) => {
     if (walkthrough === undefined) setInternalWalkthrough(state);
     onWalkthroughChange?.(state);
@@ -481,6 +498,7 @@ const ValidViewer = forwardRef<
   };
   return (
     <div
+      ref={viewerRef}
       className={`av-viewer ${className}`}
       style={style}
       aria-label={ariaLabel}
@@ -605,6 +623,14 @@ const ValidViewer = forwardRef<
             )}
             <button type="button" onClick={resetCamera}>
               Reset camera
+            </button>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ? '⛶' : 'Fullscreen'}
             </button>
           </div>
         </div>
