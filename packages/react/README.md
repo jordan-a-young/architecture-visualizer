@@ -14,6 +14,24 @@ Selection may be controlled with `selectedNodeId` (null for none), or internal w
 
 Custom renderers are R3F components receiving node, selected/highlighted/dimmed flags, color and opacity. The viewer owns positioning and selection. Custom layouts map every node ID to a finite `[x,y,z]` tuple. Core data stays provider-independent. ESM with declarations and an explicit styles export. MIT licensed.
 
+## Node labels
+
+Node captions are compact, single-line names placed beside the projected node geometry. They stay a readable screen size as you zoom, rather than growing with the mesh. Long names use an ellipsis; the full name remains in the native tooltip, accessible button name, Browse nodes list and inspector. Type and group context remain in the tooltip and inspector instead of a second caption line.
+
+```tsx
+import type { NodeLabelMode } from 'archgraph-react';
+const labelMode: NodeLabelMode = 'auto';
+<ArchitectureViewer graph={graph} nodeLabelMode={labelMode} />;
+```
+
+- `auto` (default): show captions where a nearby slot fits, hide ordinary captions when the node projects to less than 8 pixels, and prioritize keyboard focus, selection, hover and highlighted nodes.
+- `selected`: show only hovered, selected, keyboard-focused or highlighted node captions.
+- `none`: hide all node captions. Geometry selection, dragging, Browse nodes and the inspector remain available.
+
+Placement reserves screen-space bounds for all visible node geometry, including meshes returned by `nodeRenderers`, and avoids previously placed node captions. It tries nearby sides without moving nodes and retains a valid side to avoid jumping on hover. When no slot fits, even a selected caption may hide; zoom in, focus the node, or use the keyboard-accessible Browse nodes list. This conservative bounding-box approach does not promise optimal labeling for arbitrarily dense graphs. Group captions are secondary and yield to nodes/captions; group collapse controls remain in Browse nodes. Edge labels are controlled separately by `showEdgeLabels` and may still overlap.
+
+The demo exposes a **Node labels** selector. The library prop belongs to host configuration and is not saved in `ViewerViewState`. PNG exports use the current visible captions, positions and truncation; `includeLabels: false` omits all built-in labels. No graph or layout schema changes are required.
+
 ## Screenshot export
 
 The **Download PNG** button saves the current camera view, including visible nodes, relationships, selection styling, and built-in labels. It excludes the toolbar and details panel. Set `showScreenshotButton={false}` to hide the button. Capture uses the current canvas pixel resolution (including its device pixel ratio), with no network requests or persistent drawing buffer.
@@ -141,7 +159,7 @@ Bounds enclose visible member footprints and nested children, update while dragg
 
 `edgeRouting="auto"` uses paths supplied by a layout engine and keeps the existing curved rendering for position-only layouts. `"orthogonal"` opts any layout into routing; `"curved"` explicitly retains curves. Routed edges use attachment points on node footprints, rounded bends, directed arrows and labels on their longest segment. Layout and routing remain separate from rendering.
 
-After dragging or collapse, the pure `routeEdges(graph, positions, options?)` helper reuses valid paths and recomputes paths that are stale or intersect a moved node. It preserves original edge keys for selection, parallel relationships and walkthroughs. The bounded orthogonal search prefers short routes, fewer bends and fewer crossings with earlier routes. It never moves manually placed nodes. Overlapping footprints or an exhausted search use a raised fallback; this is not a guarantee of collision-free routing for arbitrary custom 3D geometry. Node labels receive bounded screen-space spacing to reduce overlap without moving nodes. Labels remain camera-dependent; crowded edge/group labels may still overlap.
+After dragging or collapse, the pure `routeEdges(graph, positions, options?)` helper reuses valid paths and recomputes paths that are stale or intersect a moved node. It preserves original edge keys for selection, parallel relationships and walkthroughs. The bounded orthogonal search prefers short routes, fewer bends and fewer crossings with earlier routes. It never moves manually placed nodes. Overlapping footprints or an exhausted search use a raised fallback; this is not a guarantee of collision-free routing for arbitrary custom 3D geometry. Node captions use geometry-aware screen-space placement without moving nodes; crowded node/group captions hide when no nearby slot fits. Labels remain camera-dependent and edge labels may still overlap.
 
 `RoutingOptions` accepts optional `nodeSizes`, `edgeKeys`, `preferredPaths`, and `basePositions`. `countRouteCrossings(paths)` counts proper segment crossings in the horizontal reference plane; shared endpoints and collinear overlaps are excluded. Engine footprints must match custom geometry. Rendering uses the routed geometry for both visible lines and hit testing. Provider models and graph JSON are unchanged.
 
@@ -151,4 +169,4 @@ After dragging or collapse, the pure `routeEdges(graph, positions, options?)` he
 
 **Arrange visible** or `await ref.arrangeVisibleGraph()` explicitly lays out the filtered graph. Existing position overrides remain fixed. New calculated positions become overrides, so they survive filters and are included in saved views; **Reset layout** releases them. Collapsed groups are arranged using their retained member nodes, then projected into summaries. Changing filters alone still preserves the layout. Controlled hosts receive `onNodePositionsChange` and may decline the proposal. Results are discarded if graph, layout, filters or overrides change during calculation; failures preserve current positions and reject the imperative Promise. The built-in control displays errors.
 
-The demo offers advanced/basic layouts, left-to-right/top-to-bottom direction, normal/spacious spacing and a boundary toggle. These configuration controls belong to the demo; consuming applications may expose their own. Layout settings are not serialized by the viewer. Keep the same settings when restoring a saved view, or explicitly reset/rearrange it.
+The demo offers advanced/basic layouts, left-to-right/top-to-bottom direction, normal/spacious spacing, a boundary toggle and node label modes. These configuration controls belong to the demo; consuming applications may expose their own. Layout settings are not serialized by the viewer. Keep the same settings when restoring a saved view, or explicitly reset/rearrange it.

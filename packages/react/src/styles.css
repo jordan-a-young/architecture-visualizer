@@ -154,30 +154,30 @@
   border-radius: 4px;
   margin-left: 4px;
 }
-.av-node-label {
-  transform: translateY(var(--av-label-offset, 0px));
+.av-viewer .av-node-label {
+  transform: translate(var(--av-label-x, 0px), var(--av-label-y, 0px));
+  visibility: hidden;
   white-space: nowrap;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
+  display: block;
+  font:
+    500 11px/1.3 system-ui,
+    sans-serif;
   background: #ffffffed;
   border: 1px solid #dfe5eb;
-  border-radius: 6px;
-  padding: 5px 9px;
-  box-shadow: 0 2px 5px #23344809;
+  border-radius: 4px;
+  padding: 3px 5px;
   color: #344257;
-  min-width: 90px;
+  max-width: 160px;
+  min-height: 22px;
 }
 .av-node-label strong {
-  font-size: 11px;
-  font-weight: 600;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: inherit;
 }
-.av-node-label span {
-  font-size: 9px;
-  color: #7b8795;
-}
-.av-node-label-selected {
+.av-viewer .av-node-label-selected {
   border-color: #3f6c9f;
   box-shadow: 0 0 0 2px #3f6c9f22;
 }
@@ -454,12 +454,15 @@
   font-size: 12px;
 }
 
-.av-group-label {
-  transform: translateX(var(--av-group-label-x, 0px));
+.av-viewer .av-group-label {
+  transform: translate(
+    var(--av-group-label-x, 0px),
+    var(--av-group-label-y, 0px)
+  );
   background: #f5f7fa;
   border: 1px solid currentColor;
   border-radius: 4px;
-  padding: 4px 7px;
+  padding: 3px 5px;
   font:
     600 11px/1.3 system-ui,
     sans-serif;

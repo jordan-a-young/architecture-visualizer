@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box3, PerspectiveCamera, Vector3 } from 'three';
+import type { Group } from 'three';
 import type { ComponentRef } from 'react';
 import type {
   ArchitectureGraph,
@@ -189,6 +190,7 @@ export interface GraphSceneProps {
   nodeRenderers?: ArchitectureViewerProps['nodeRenderers'];
   edgeStyle?: ArchitectureViewerProps['edgeStyle'];
   showEdgeLabels?: boolean;
+  nodeLabelMode?: ArchitectureViewerProps['nodeLabelMode'];
 }
 function SupportedScene({
   graph,
@@ -206,6 +208,7 @@ function SupportedScene({
   nodeRenderers,
   edgeStyle,
   showEdgeLabels,
+  nodeLabelMode = 'auto',
   onCaptureReady,
   layoutPositions,
   draggableNodes,
@@ -221,6 +224,7 @@ function SupportedScene({
   onEdgeSelect,
 }: GraphSceneProps) {
   const dragLock = useRef(false);
+  const geometryObjects = useMemo(() => new Map<string, Group>(), []);
   const connected = useMemo(
     () =>
       new Set(
@@ -336,6 +340,7 @@ function SupportedScene({
           <InteractiveNode
             key={node.id}
             node={node}
+            geometryObjects={geometryObjects}
             position={positions.get(node.id)!}
             selected={selected}
             dimmed={dimmed}
@@ -355,7 +360,7 @@ function SupportedScene({
           />
         );
       })}
-      <LabelPlacement />
+      <LabelPlacement geometryObjects={geometryObjects} mode={nodeLabelMode} />
     </Canvas>
   );
 }

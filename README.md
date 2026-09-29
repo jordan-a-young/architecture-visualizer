@@ -158,6 +158,8 @@ Import `ArchitectureGraph` as a type from `archgraph-core` in this example. Omit
 
 A single click selects without navigating. Selection emphasizes the node and incident edges, fades unrelated nodes, and shows description, tags, metadata, links, dependencies and dependents. Edge types, labels and metadata appear under each relationship. Empty-space click, the close button and Escape clear selection. Orbit/pan/zoom use pointer controls. The keyboard-accessible Browse nodes list also works when WebGL is unavailable. The scene falls back to this inspector workflow on rendering failure.
 
+Node captions use a compact single line beside the projected geometry, including custom shapes. Long names are truncated visually; hover for the full name or open the inspector. Automatic placement hides captions when they cannot fit without covering nodes or other node captions, and gives selection, hover, keyboard focus and highlighting priority. Zoom in or use Browse nodes when a caption is hidden. The demo offers Automatic, Hover / selected, and Hidden modes. See the [label guide](packages/react/README.md#node-labels).
+
 The viewer validates graph input before mounting the scene. Invalid graphs show an error panel; consumers can call `validateGraph` to expose all warnings themselves. Replace graph/filter/layout references when changing data so memoized computations update.
 
 | Viewer prop / API                         | Purpose                                                                                         |
@@ -167,6 +169,7 @@ The viewer validates graph input before mounting the scene. Invalid graphs show 
 | `layout="layered"` or function            | Deterministic automatic or custom layout                                                        |
 | `nodeRenderers`                           | Per-type custom geometry                                                                        |
 | `edgeStyle(edge)`                         | Custom color, width and dash overrides                                                          |
+| `nodeLabelMode`                           | Compact node captions: `auto` (default), `selected` (hover/selection/highlighting), or `none`   |
 | `showEdgeLabels`                          | All relationship labels; incident labels show on selection by default                           |
 | `showDetailsPanel` / `renderDetails`      | Hide or replace the inspector                                                                   |
 | `className`, `style`, `ariaLabel`         | Host styling and accessible naming                                                              |
@@ -230,7 +233,7 @@ ESM and TypeScript declarations are exported; no CommonJS build is claimed. CSS 
 
 ## V1 limits and next steps
 
-This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. The built-in layout is simple; the optional ELK adapter reduces crossings and respects nested groups. Expanded groups have visual boundaries. Dense graphs can still overlap labels, and crossing counts depend on the camera. Benchmark larger graphs before setting scale guarantees. Virtualized labels and richer layout constraints remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
+This vertical slice targets small-to-medium documentation graphs, not massive graph analytics. The built-in layout is simple; the optional ELK adapter reduces crossings and respects nested groups. Expanded groups have visual boundaries. Dense graphs may hide node/group captions to keep geometry readable; edge labels may still overlap. Crossing counts depend on the camera. Benchmark larger graphs before setting scale guarantees. Virtualized labels and richer layout constraints remain future improvements. Camera capture/restore, relationship inspection, walkthroughs, and group collapsing are available. No hidden provider discovery should be added to these packages; adapters belong in separate projects.
 
 ## License
 

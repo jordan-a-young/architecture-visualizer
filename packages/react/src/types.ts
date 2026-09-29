@@ -9,6 +9,7 @@ import type {
 import type { ViewerViewState } from './viewState.js';
 import type { Layout, Position3 } from './layout.js';
 export type NodePositions = Readonly<Record<string, Position3>>;
+export type NodeLabelMode = 'auto' | 'selected' | 'none';
 export interface NodeRendererProps {
   node: ArchitectureNode;
   selected: boolean;
@@ -92,6 +93,8 @@ export interface ArchitectureViewerProps {
   nodeRenderers?: NodeRendererRegistry;
   edgeStyle?: (edge: ArchitectureEdge) => EdgeStyle;
   showEdgeLabels?: boolean;
+  /** Compact captions: auto hides crowded/tiny nodes; selected shows hovered, selected, focused or highlighted nodes. */
+  nodeLabelMode?: NodeLabelMode;
   showDetailsPanel?: boolean;
   /** Show the PNG download button. The imperative capture API remains available. */
   showScreenshotButton?: boolean;
