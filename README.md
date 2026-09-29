@@ -40,7 +40,7 @@ pnpm dev
 
 Open http://127.0.0.1:5173. `pnpm dev` first builds both packages, then starts Vite. Changes to demo files hot reload. When editing package sources, run `pnpm --filter archgraph-core exec tsc -p tsconfig.build.json --watch` and `pnpm --filter archgraph-react exec vite build --watch` in separate terminals after the initial build. Rerun the React package build to refresh declarations after changing public types.
 
-The demo contains a frontend, gateway, three services, two databases, a queue, worker, and shared library. Links use example.com placeholders. The demo owns its title, filters and legend; these do not live in either package.
+The demo contains a frontend, gateway, three services, two databases, a queue, worker, and shared library. Links use example.com placeholders. The demo owns its title, filter controls, node legend and relationship style conventions. The viewer supplies an optional relationship legend using consumer-defined labels and actual rendered styles.
 
 ## Graph format
 
@@ -168,7 +168,9 @@ The viewer validates graph input before mounting the scene. Invalid graphs show 
 | `filters` / `useFilteredGraph`            | Pure induced-graph filtering                                                                    |
 | `layout="layered"` or function            | Deterministic automatic or custom layout                                                        |
 | `nodeRenderers`                           | Per-type custom geometry                                                                        |
-| `edgeStyle(edge)`                         | Custom color, width and dash overrides                                                          |
+| `relationshipStyles`                      | Per-type labels, descriptions, colors, widths and solid/dashed/dotted patterns                  |
+| `showRelationshipLegend`                  | Optional legend with visible counts and hover/focus/pinned highlighting (default false)         |
+| `edgeStyle(edge)`                         | Per-edge color, width and line-pattern overrides                                                |
 | `nodeLabelMode`                           | Compact node captions: `auto` (default), `selected` (hover/selection/highlighting), or `none`   |
 | `showEdgeLabels`                          | All relationship labels; incident labels show on selection by default                           |
 | `showDetailsPanel` / `renderDetails`      | Hide or replace the inspector                                                                   |
@@ -210,7 +212,7 @@ Custom renderers receive the node, selection/highlight/dimming state, color and 
 
 The built-in automatic layout uses deterministic breadth-first layers, stable group/ID ordering, and seeded cyclic/disconnected components. Groups influence ordering and render as labeled, nested boundaries by default; the optional ELK adapter also arranges groups into separate regions. `LayoutFunction` receives the full graph and returns a `ReadonlyMap<string, [number, number, number]>` for every node. Filtering preserves these positions; manual overrides apply afterward. Invalid custom positions throw a descriptive programming error. There is no provider-specific ranking.
 
-Directed edges have arrowheads, curved offsets for parallel connections, loops for self-edges, and a deterministic color per arbitrary edge type. Explicit visual settings and then `edgeStyle` override defaults. There are no animations beyond damped camera controls. Rendering is on demand.
+Directed edges have arrowheads, curved offsets for parallel connections, loops for self-edges, and a deterministic color per arbitrary edge type. `relationshipStyles` configures solid, dashed or dotted lines and consumer-defined labels. Original `edge.visual` settings and then `edgeStyle` override those type defaults; the existing `dashed` flag remains supported. The optional relationship legend reflects actual visible styles, including individual overrides. Hover/focus highlights matching edges; click pins that highlight without changing selection. It sits below the canvas and is excluded from PNG exports. See the [relationship styling guide](packages/react/README.md#relationship-styles-and-legend) for the API and precedence rules. There are no animations beyond damped camera controls. Rendering is on demand.
 
 ## Test and build
 
