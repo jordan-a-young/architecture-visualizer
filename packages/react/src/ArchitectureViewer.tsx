@@ -22,6 +22,12 @@ import { computeLayout, validateLayoutGeometry } from './layout.js';
 import { useLayout } from './useLayout.js';
 import { useFilteredGraph } from './hooks.js';
 import { GraphScene } from './Scene.js';
+import { getRelationshipLegend, resolveEdgeStyle } from './edgeStyles.js';
+import {
+  RelationshipLegend,
+  activeLegendEntry,
+  emptyLegendHighlight,
+} from './RelationshipLegend.js';
 import { parseViewState } from './viewState.js';
 import type { CameraState, ViewerViewState } from './viewState.js';
 import type { GraphFilterOptions } from 'archgraph-core';
@@ -95,6 +101,8 @@ const ValidViewer = forwardRef<
     onNodeDragEnd,
     nodeRenderers,
     edgeStyle,
+    relationshipStyles,
+    showRelationshipLegend = false,
     showEdgeLabels = false,
     nodeLabelMode = 'auto',
     showDetailsPanel = true,
@@ -132,6 +140,7 @@ const ValidViewer = forwardRef<
     cameraReader.current = reader;
   }, []);
   const [query, setQuery] = useState('');
+  const [legendHighlight, setLegendHighlight] = useState(emptyLegendHighlight);
   const [internalWalkthrough, setInternalWalkthrough] =
     useState<WalkthroughState | null>(defaultWalkthrough ?? null);
   const path = useMemo(
@@ -272,6 +281,54 @@ const ValidViewer = forwardRef<
       ),
     [visible, edgeKeys, projection],
   );
+  const edgeStyles = useMemo(
+    () =>
+      new Map(
+        visible.edges.map((edge) => {
+          const original = projection.originals.get(edge)!;
+          return [
+            edge,
+            resolveEdgeStyle(
+              original,
+              relationshipStyles,
+              edgeStyle?.(original),
+            ),
+          ];
+        }),
+      ),
+    [visible, projection, relationshipStyles, edgeStyle],
+  );
+  const legendEntries = useMemo(
+    () =>
+      getRelationshipLegend(
+        visible.edges,
+        sceneEdgeKeys,
+        edgeStyles,
+        relationshipStyles,
+      ),
+    [visible, sceneEdgeKeys, edgeStyles, relationshipStyles],
+  );
+  useEffect(() => {
+    setLegendHighlight((previous) => {
+      const retained = (id: string | null) =>
+        showRelationshipLegend && legendEntries.some((entry) => entry.id === id)
+          ? id
+          : null;
+      const next = {
+        hovered: retained(previous.hovered),
+        focused: retained(previous.focused),
+        pinned: retained(previous.pinned),
+      };
+      return next.hovered === previous.hovered &&
+        next.focused === previous.focused &&
+        next.pinned === previous.pinned
+        ? previous
+        : next;
+    });
+  }, [legendEntries, showRelationshipLegend]);
+  const legendEdges = showRelationshipLegend
+    ? (activeLegendEntry(legendEntries, legendHighlight)?.edgeKeys ?? [])
+    : [];
   const edgePaths = useMemo(
     () =>
       edgeRouting === 'orthogonal' ||
@@ -506,238 +563,242 @@ const ValidViewer = forwardRef<
         if (event.key === 'Escape') select(null);
       }}
     >
-      <div className="av-viewport">
-        {computedLayout.pending && (
-          <p role="status" className="av-layout-status">
-            Arranging graph…
-          </p>
-        )}
-        {computedLayout.error && (
-          <p role="alert" className="av-layout-status">
-            Layout failed: {computedLayout.error} Using the basic layout.
-          </p>
-        )}
-        <SceneBoundary key={reset}>
-          <GraphScene
-            graph={visible}
-            cameraPreset={cameraPreset}
-            edgePaths={edgePaths}
-            groupBoundaries={groupBoundaries}
-            groupStyle={groupStyle}
-            onCollapseGroup={(id) => changeCollapsed([...collapsed, id])}
-            onCaptureReady={onCaptureReady}
-            focusRequest={focusRequest}
-            onCameraReady={onCameraReady}
-            cameraRequest={cameraRequest}
-            edgeKeys={sceneEdgeKeys}
-            groupSummaries={
-              new Map(
-                [...projection.proxies].map(([id, group]) => [
-                  id,
-                  `${projection.members.get(group.id)!.length} nodes · Click to expand`,
-                ]),
-              )
-            }
-            selectedEdgeKey={selectedEdge ? edgeCandidate : null}
-            onEdgeSelect={selectEdge}
-            highlightedEdgeKeys={[
-              ...highlightedEdgeKeys,
-              ...(path?.state.edgeKeys ?? []),
-            ]}
-            pathActive={!!path}
-            positions={positions}
-            layoutPositions={layoutPositions}
-            draggableNodes={draggableNodes}
-            onNodeMove={moveNode}
-            onNodeDragEnd={onNodeDragEnd}
-            selectedId={selected?.id ?? null}
-            onSelect={select}
-            reset={reset}
-            highlightedNodeIds={[
-              ...highlightedNodeIds,
-              ...(path?.nodeIds ?? []),
-            ]}
-            nodeRenderers={nodeRenderers}
-            edgeStyle={
-              edgeStyle
-                ? (edge) => edgeStyle(projection.originals.get(edge) ?? edge)
-                : undefined
-            }
-            showEdgeLabels={showEdgeLabels}
-            nodeLabelMode={nodeLabelMode}
-          />
-        </SceneBoundary>
-        {!visible.nodes.length && (
-          <p className="av-empty" role="status">
-            No nodes match the current filters.
-          </p>
-        )}
-        <div className="av-toolbar">
-          <span>
-            {visible.nodes.length} nodes · {visible.edges.length} relationships
-          </span>
-          <div className="av-toolbar-actions">
-            <button
-              type="button"
-              disabled={
-                arranging || computedLayout.pending || !filtered.nodes.length
+      <div
+        className={`av-scene-column${showRelationshipLegend ? ' av-with-legend' : ''}`}
+      >
+        <div className="av-viewport">
+          {computedLayout.pending && (
+            <p role="status" className="av-layout-status">
+              Arranging graph…
+            </p>
+          )}
+          {computedLayout.error && (
+            <p role="alert" className="av-layout-status">
+              Layout failed: {computedLayout.error} Using the basic layout.
+            </p>
+          )}
+          <SceneBoundary key={reset}>
+            <GraphScene
+              graph={visible}
+              cameraPreset={cameraPreset}
+              edgePaths={edgePaths}
+              groupBoundaries={groupBoundaries}
+              groupStyle={groupStyle}
+              onCollapseGroup={(id) => changeCollapsed([...collapsed, id])}
+              onCaptureReady={onCaptureReady}
+              focusRequest={focusRequest}
+              onCameraReady={onCameraReady}
+              cameraRequest={cameraRequest}
+              edgeKeys={sceneEdgeKeys}
+              groupSummaries={
+                new Map(
+                  [...projection.proxies].map(([id, group]) => [
+                    id,
+                    `${projection.members.get(group.id)!.length} nodes · Click to expand`,
+                  ]),
+                )
               }
-              onClick={() => {
-                void arrangeVisibleGraph().catch(() => undefined);
-              }}
-            >
-              {arranging ? 'Arranging…' : 'Arrange visible'}
-            </button>
-            <button type="button" onClick={() => setCameraPreset('top')}>
-              Top view
-            </button>
-            {showWalkthrough && selected && !path && (
+              selectedEdgeKey={selectedEdge ? edgeCandidate : null}
+              onEdgeSelect={selectEdge}
+              highlightedEdgeKeys={[
+                ...highlightedEdgeKeys,
+                ...(path?.state.edgeKeys ?? []),
+              ]}
+              pathActive={!!path}
+              positions={positions}
+              layoutPositions={layoutPositions}
+              draggableNodes={draggableNodes}
+              onNodeMove={moveNode}
+              onNodeDragEnd={onNodeDragEnd}
+              selectedId={selected?.id ?? null}
+              onSelect={select}
+              reset={reset}
+              highlightedNodeIds={[
+                ...highlightedNodeIds,
+                ...(path?.nodeIds ?? []),
+              ]}
+              nodeRenderers={nodeRenderers}
+              edgeStyles={edgeStyles}
+              legendEdgeKeys={legendEdges}
+              showEdgeLabels={showEdgeLabels}
+              nodeLabelMode={nodeLabelMode}
+            />
+          </SceneBoundary>
+          {!visible.nodes.length && (
+            <p className="av-empty" role="status">
+              No nodes match the current filters.
+            </p>
+          )}
+          <div className="av-toolbar">
+            <span>
+              {visible.nodes.length} nodes · {visible.edges.length}{' '}
+              relationships
+            </span>
+            <div className="av-toolbar-actions">
               <button
                 type="button"
+                disabled={
+                  arranging || computedLayout.pending || !filtered.nodes.length
+                }
                 onClick={() => {
-                  selectEdge(null);
-                  changeWalkthrough({ startNodeId: selected.id, edgeKeys: [] });
+                  void arrangeVisibleGraph().catch(() => undefined);
                 }}
               >
-                Start walkthrough
+                {arranging ? 'Arranging…' : 'Arrange visible'}
               </button>
-            )}
-            {selected && (
-              <button type="button" onClick={() => focusNode(selected.id)}>
-                Focus node
+              <button type="button" onClick={() => setCameraPreset('top')}>
+                Top view
               </button>
-            )}
-            {(draggableNodes || Object.keys(overrides).length > 0) && (
-              <button type="button" onClick={resetLayout}>
-                Reset layout
-              </button>
-            )}
-            {showScreenshotButton && (
-              <button
-                type="button"
-                disabled={!captureReady || capturing}
-                onClick={download}
-              >
-                {capturing ? 'Exporting…' : 'Download PNG'}
-              </button>
-            )}
-            <button type="button" onClick={resetCamera}>
-              Reset camera
-            </button>
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            >
-              {isFullscreen ? '⛶' : 'Fullscreen'}
-            </button>
-          </div>
-        </div>
-        {arrangeError && (
-          <p role="alert" className="av-layout-status">
-            Arrangement failed: {arrangeError}
-          </p>
-        )}
-        {captureError && (
-          <p role="alert" className="av-export-error">
-            {captureError}
-          </p>
-        )}
-        <details className="av-node-list">
-          <summary>Browse nodes ({visible.nodes.length})</summary>
-          {!!graph.groups.length && (
-            <details className="av-group-list">
-              <summary>Groups ({graph.groups.length})</summary>
-              {graph.groups.map((group) => (
+              {showWalkthrough && selected && !path && (
                 <button
                   type="button"
-                  key={group.id}
-                  aria-expanded={!collapsed.includes(group.id)}
-                  onClick={() =>
-                    collapsed.includes(group.id)
-                      ? expandGroup(group.id)
-                      : changeCollapsed([...collapsed, group.id])
-                  }
+                  onClick={() => {
+                    selectEdge(null);
+                    changeWalkthrough({
+                      startNodeId: selected.id,
+                      edgeKeys: [],
+                    });
+                  }}
                 >
-                  {collapsed.includes(group.id) ? 'Expand' : 'Collapse'}{' '}
-                  {group.label}
-                  {group.parent && (
-                    <small>
-                      {' '}
-                      ·{' '}
-                      {
-                        graph.groups.find(
-                          (parent) => parent.id === group.parent,
-                        )?.label
-                      }
-                    </small>
-                  )}
+                  Start walkthrough
+                </button>
+              )}
+              {selected && (
+                <button type="button" onClick={() => focusNode(selected.id)}>
+                  Focus node
+                </button>
+              )}
+              {(draggableNodes || Object.keys(overrides).length > 0) && (
+                <button type="button" onClick={resetLayout}>
+                  Reset layout
+                </button>
+              )}
+              {showScreenshotButton && (
+                <button
+                  type="button"
+                  disabled={!captureReady || capturing}
+                  onClick={download}
+                >
+                  {capturing ? 'Exporting…' : 'Download PNG'}
+                </button>
+              )}
+              <button type="button" onClick={resetCamera}>
+                Reset camera
+              </button>
+            </div>
+          </div>
+          {arrangeError && (
+            <p role="alert" className="av-layout-status">
+              Arrangement failed: {arrangeError}
+            </p>
+          )}
+          {captureError && (
+            <p role="alert" className="av-export-error">
+              {captureError}
+            </p>
+          )}
+          <details className="av-node-list">
+            <summary>Browse nodes ({visible.nodes.length})</summary>
+            {!!graph.groups.length && (
+              <details className="av-group-list">
+                <summary>Groups ({graph.groups.length})</summary>
+                {graph.groups.map((group) => (
+                  <button
+                    type="button"
+                    key={group.id}
+                    aria-expanded={!collapsed.includes(group.id)}
+                    onClick={() =>
+                      collapsed.includes(group.id)
+                        ? expandGroup(group.id)
+                        : changeCollapsed([...collapsed, group.id])
+                    }
+                  >
+                    {collapsed.includes(group.id) ? 'Expand' : 'Collapse'}{' '}
+                    {group.label}
+                    {group.parent && (
+                      <small>
+                        {' '}
+                        ·{' '}
+                        {
+                          graph.groups.find(
+                            (parent) => parent.id === group.parent,
+                          )?.label
+                        }
+                      </small>
+                    )}
+                  </button>
+                ))}
+              </details>
+            )}
+            <div>
+              {showSearch && (
+                <input
+                  type="search"
+                  aria-label="Search nodes"
+                  placeholder="Search nodes…"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              )}
+              {!!normalizedQuery && !searchResults.length && (
+                <p role="status">No matching nodes in this view.</p>
+              )}
+              {searchResults.map((node) => (
+                <button
+                  type="button"
+                  key={node.id}
+                  aria-pressed={node.id === selected?.id}
+                  onClick={() => select(node)}
+                >
+                  {projection.proxies.has(node.id)
+                    ? `Expand ${node.label}`
+                    : node.label}
+                </button>
+              ))}
+            </div>
+            <details className="av-edge-list">
+              <summary>Relationships ({visible.edges.length})</summary>
+              {visible.edges.map((edge) => (
+                <button
+                  type="button"
+                  key={sceneEdgeKeys.get(edge)}
+                  aria-pressed={selectedEdge === projection.originals.get(edge)}
+                  onClick={() => selectEdge(edge)}
+                >
+                  {getNode(visible, edge.source)?.label} →{' '}
+                  {getNode(visible, edge.target)?.label} ·{' '}
+                  {edge.label ?? edge.type ?? 'relationship'}
                 </button>
               ))}
             </details>
-          )}
-          <div>
-            {showSearch && (
-              <input
-                type="search"
-                aria-label="Search nodes"
-                placeholder="Search nodes…"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            )}
-            {!!normalizedQuery && !searchResults.length && (
-              <p role="status">No matching nodes in this view.</p>
-            )}
-            {searchResults.map((node) => (
-              <button
-                type="button"
-                key={node.id}
-                aria-pressed={node.id === selected?.id}
-                onClick={() => select(node)}
-              >
-                {projection.proxies.has(node.id)
-                  ? `Expand ${node.label}`
-                  : node.label}
-              </button>
-            ))}
-          </div>
-          <details className="av-edge-list">
-            <summary>Relationships ({visible.edges.length})</summary>
-            {visible.edges.map((edge) => (
-              <button
-                type="button"
-                key={sceneEdgeKeys.get(edge)}
-                aria-pressed={selectedEdge === projection.originals.get(edge)}
-                onClick={() => selectEdge(edge)}
-              >
-                {getNode(visible, edge.source)?.label} →{' '}
-                {getNode(visible, edge.target)?.label} ·{' '}
-                {edge.label ?? edge.type ?? 'relationship'}
-              </button>
-            ))}
           </details>
-        </details>
-        {showWalkthrough && path && (
-          <Walkthrough
-            graph={graph}
-            path={path}
-            visibleIds={
-              new Set(
-                visible.nodes
-                  .filter((node) => !projection.proxies.has(node.id))
-                  .map((node) => node.id),
-              )
-            }
-            onChange={changeWalkthrough}
+          {showWalkthrough && path && (
+            <Walkthrough
+              graph={graph}
+              path={path}
+              visibleIds={
+                new Set(
+                  visible.nodes
+                    .filter((node) => !projection.proxies.has(node.id))
+                    .map((node) => node.id),
+                )
+              }
+              onChange={changeWalkthrough}
+            />
+          )}
+          <p className="av-controls-hint">
+            {draggableNodes
+              ? 'Drag nodes to move · Drag background to orbit · Right-drag to pan · Scroll to zoom · Esc to cancel/clear'
+              : 'Drag to orbit · Right-drag to pan · Scroll to zoom · Esc to clear'}
+          </p>
+        </div>
+        {showRelationshipLegend && (
+          <RelationshipLegend
+            entries={legendEntries}
+            highlight={legendHighlight}
+            onChange={setLegendHighlight}
           />
         )}
-        <p className="av-controls-hint">
-          {draggableNodes
-            ? 'Drag nodes to move · Drag background to orbit · Right-drag to pan · Scroll to zoom · Esc to cancel/clear'
-            : 'Drag to orbit · Right-drag to pan · Scroll to zoom · Esc to clear'}
-        </p>
       </div>
       {showDetailsPanel &&
         (selectedEdge ? (

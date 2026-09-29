@@ -4,7 +4,7 @@ import './styles.css';
 export { ArchitectureViewer } from './ArchitectureViewer.js';
 export { DefaultDetailsPanel } from './DetailsPanel.js';
 export { DefaultNodeRenderer, getNodeColor } from './Node.js';
-export { defaultEdgeStyle } from './Edge.js';
+export { defaultEdgeStyle } from './edgeStyles.js';
 export {
   layeredLayout,
   computeLayout,
@@ -30,6 +30,9 @@ export type {
   NodeRendererProps,
   NodeRendererRegistry,
   EdgeStyle,
+  EdgeLineStyle,
+  RelationshipStyle,
+  RelationshipStyleRegistry,
   GroupStyle,
   CameraPreset,
   DetailsPanelProps,

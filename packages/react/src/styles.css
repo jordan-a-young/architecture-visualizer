@@ -30,11 +30,82 @@
   outline: 3px solid #3f77bc;
   outline-offset: 3px;
 }
+.av-scene-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
 .av-viewport {
   position: relative;
   flex: 1;
   min-width: 0;
   min-height: 440px;
+}
+.av-with-legend .av-viewport {
+  min-height: 280px;
+}
+.av-relationship-legend {
+  flex: none;
+  max-height: 160px;
+  overflow: auto;
+  padding: 8px 16px;
+  border-top: 1px solid #dfe5eb;
+  background: #fafbfc;
+  font-size: 11px;
+}
+.av-relationship-legend summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.av-relationship-legend p {
+  margin: 4px 0;
+  color: #687a91;
+  font-size: 10px;
+}
+.av-relationship-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.av-relationship-legend li {
+  min-width: 0;
+  max-width: 100%;
+}
+.av-relationship-legend button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  text-align: left;
+  padding: 4px 7px;
+  color: #344257;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+}
+.av-relationship-legend svg {
+  flex: none;
+}
+.av-relationship-legend span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.av-relationship-legend small {
+  display: block;
+  color: #687a91;
+  font-size: 9px;
+}
+.av-relationship-legend button[data-active] {
+  background: #e8eff7;
+  border-color: #9eb2ca;
+}
+.av-relationship-legend button[aria-pressed='true'] {
+  border-color: #3f6c9f;
 }
 .av-details {
   width: 320px;
@@ -321,6 +392,9 @@
   .av-viewport {
     flex: none;
     height: 480px;
+  }
+  .av-scene-column {
+    flex: none;
   }
   .av-details {
     width: 100%;

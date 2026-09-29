@@ -9,6 +9,9 @@ import type {
   NodePositions,
   WalkthroughState,
   NodeLabelMode,
+  RelationshipStyleRegistry,
+  EdgeLineStyle,
+  LayoutFunction,
 } from 'archgraph-react';
 import type { ArchitectureGraph } from 'archgraph-core';
 import 'archgraph-react/styles.css';
@@ -59,6 +62,51 @@ const labelGraph: ArchitectureGraph = {
     metadata: { tall: node.id === 'a' },
   })),
 };
+const legendGraph: ArchitectureGraph = {
+  ...graph,
+  edges: [
+    { id: 'request', source: 'a', target: 'b', type: 'calls' },
+    { id: 'event', source: 'a', target: 'c', type: 'events' },
+    { id: 'dependency', source: 'b', target: 'c', type: 'depends-on' },
+    {
+      id: 'legacy',
+      source: 'c',
+      target: 'a',
+      type: 'depends-on',
+      visual: { dashed: true },
+    },
+  ],
+};
+const legendStyles: RelationshipStyleRegistry = {
+  calls: {
+    label: 'Synchronous call',
+    color: '#426ed0',
+    width: 2,
+    lineStyle: 'solid',
+  },
+  events: {
+    label: 'Async message',
+    color: '#9b549a',
+    width: 2,
+    lineStyle: 'dashed',
+  },
+  'depends-on': {
+    label: 'Code dependency',
+    color: '#b95c52',
+    width: 2,
+    lineStyle: 'dotted',
+  },
+};
+const patternGraph: ArchitectureGraph = {
+  ...graph,
+  nodes: graph.nodes.slice(0, 2),
+  edges: [{ id: 'pattern', source: 'a', target: 'b', type: 'preview' }],
+};
+const patternLayout: LayoutFunction = () =>
+  new Map([
+    ['a', [-6, 0, 0]],
+    ['b', [6, 0, 0]],
+  ]);
 function Custom({ node, color, opacity }: NodeRendererProps) {
   return (
     <mesh scale={node.metadata?.tall ? [1.4, 3, 1.4] : 1}>
@@ -78,6 +126,10 @@ function Fixture() {
   const [dragEnds, setDragEnds] = useState(0);
   const [enabled, setEnabled] = useState(true);
   const [nodeLabelMode, setNodeLabelMode] = useState<NodeLabelMode>('auto');
+  const legend = new URLSearchParams(location.search).has('legend');
+  const pattern = new URLSearchParams(location.search).get(
+    'pattern',
+  ) as EdgeLineStyle | null;
   const controlled = new URLSearchParams(location.search).has('controlled');
   const accept = !new URLSearchParams(location.search).has('reject');
   const exportScene = async () => {
@@ -137,10 +189,27 @@ function Fixture() {
         <ArchitectureViewer
           ref={viewer}
           nodeLabelMode={nodeLabelMode}
+          relationshipStyles={
+            pattern
+              ? {
+                  preview: {
+                    label: 'Pattern preview',
+                    color: '#d34343',
+                    width: 3,
+                    lineStyle: pattern,
+                  },
+                }
+              : legend
+                ? legendStyles
+                : undefined
+          }
+          showRelationshipLegend={legend}
           layout={
-            new URLSearchParams(location.search).has('layout')
-              ? advancedLayout
-              : 'layered'
+            pattern
+              ? patternLayout
+              : new URLSearchParams(location.search).has('layout')
+                ? advancedLayout
+                : 'layered'
           }
           edgeRouting={
             new URLSearchParams(location.search).has('routes')
@@ -148,13 +217,17 @@ function Fixture() {
               : 'auto'
           }
           graph={
-            new URLSearchParams(location.search).has('labels')
-              ? labelGraph
-              : new URLSearchParams(location.search).has('groups')
-                ? groupedGraph
-                : new URLSearchParams(location.search).has('walkthrough')
-                  ? walkthroughGraph
-                  : graph
+            pattern
+              ? patternGraph
+              : legend
+                ? legendGraph
+                : new URLSearchParams(location.search).has('labels')
+                  ? labelGraph
+                  : new URLSearchParams(location.search).has('groups')
+                    ? groupedGraph
+                    : new URLSearchParams(location.search).has('walkthrough')
+                      ? walkthroughGraph
+                      : graph
           }
           collapsedGroupIds={controlled ? collapsed : undefined}
           onCollapsedGroupsChange={(ids) => {
