@@ -42,6 +42,10 @@ Open http://127.0.0.1:5173. `pnpm dev` first builds both packages, then starts V
 
 The demo contains a frontend, gateway, three services, two databases, a queue, worker, and shared library. Links use example.com placeholders. The demo owns its title, filter controls, node legend and relationship style conventions. The viewer supplies an optional relationship legend using consumer-defined labels and actual rendered styles.
 
+Use **Load graph JSON** to inspect your own normalized `ArchitectureGraph` file (up to 5 MiB), then **Dataset** to switch between imported files and the sample. The demo performs schema and semantic validation before switching; an invalid file leaves the current graph intact. Files are read in this tab's memory, never uploaded, added to the bundle or automatically persisted. Reloading clears imports. Keep company-specific graph files outside this public repository. No private datasets are required to install, build or run the demo.
+
+Switching datasets resets selection, filters, camera, manual positions and walkthrough state. Named saved views remain available for the bundled commerce sample; they are disabled for imported graphs so local node IDs and view state are not written to browser storage. File reading and dataset management belong solely to the demo, not either library package.
+
 ## Graph format
 
 ```ts
@@ -157,6 +161,8 @@ function Architecture({ graph }: { graph: ArchitectureGraph }) {
 Import `ArchitectureGraph` as a type from `archgraph-core` in this example. Omitting `selectedNodeId` enables internal selection; `defaultSelectedNodeId` provides its initial value. Passing `null` means controlled empty selection. Callbacks report user intent, including `null` when clearing; controlled state changes only when the host updates the prop.
 
 A single click selects without navigating. Selection emphasizes the node and incident edges, fades unrelated nodes, and shows description, tags, metadata, links, dependencies and dependents. Edge types, labels and metadata appear under each relationship. Empty-space click, the close button and Escape clear selection. Orbit/pan/zoom use pointer controls. The keyboard-accessible Browse nodes list also works when WebGL is unavailable. The scene falls back to this inspector workflow on rendering failure.
+
+**Enter fullscreen** expands the viewer with its controls, inspector and legend when the browser supports it. Escape exits fullscreen without clearing selection; outside fullscreen it clears selection normally. Failed fullscreen requests show an error and allow retry. The 3D renderer requires WebGL2; WebGL1-only environments retain the inspector. See [fullscreen and browser support](packages/react/README.md#fullscreen-and-browser-support).
 
 Node captions use a compact single line beside the projected geometry, including custom shapes. Long names are truncated visually; hover for the full name or open the inspector. Automatic placement hides captions when they cannot fit without covering nodes or other node captions, and gives selection, hover, keyboard focus and highlighting priority. Zoom in or use Browse nodes when a caption is hidden. The demo offers Automatic, Hover / selected, and Hidden modes. See the [label guide](packages/react/README.md#node-labels).
 

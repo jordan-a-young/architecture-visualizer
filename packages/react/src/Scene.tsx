@@ -92,7 +92,7 @@ function CameraRig({
     const direction =
       preset === 'top'
         ? new Vector3(0, 1, 0.001).normalize()
-        : new Vector3(0, 1.3, 1).normalize();
+        : new Vector3(0, 1.6, 0.6).normalize();
     const tangent = Math.tan(fov / 2);
     const projectedHeight = extent.y * direction.z + extent.z * direction.y;
     const depth = extent.y * direction.y + extent.z * direction.z;
@@ -262,7 +262,7 @@ function SupportedScene({
     <Canvas
       frameloop="demand"
       dpr={[1, 2]}
-      camera={{ position: [10, 18, 24], fov: 42 }}
+      camera={{ position: [0, 30, 12], fov: 42 }}
       onPointerMissed={(event) => {
         if (event.type === 'click') onSelect(null);
       }}

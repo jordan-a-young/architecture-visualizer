@@ -31,7 +31,8 @@ import {
 import { parseViewState } from './viewState.js';
 import type { CameraState, ViewerViewState } from './viewState.js';
 import type { GraphFilterOptions } from 'archgraph-core';
-import { Walkthrough } from './Walkthrough.js';
+import { Walkthrough } from './WalkthroughPanel.js';
+import { useFullscreen } from './useFullscreen.js';
 import { resolveWalkthrough } from './walkthrough.js';
 import type { WalkthroughState } from './types.js';
 import { getEdgeKey } from './edgeKey.js';
@@ -140,6 +141,8 @@ const ValidViewer = forwardRef<
     cameraReader.current = reader;
   }, []);
   const [query, setQuery] = useState('');
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const fullscreen = useFullscreen(viewerRef);
   const [legendHighlight, setLegendHighlight] = useState(emptyLegendHighlight);
   const [internalWalkthrough, setInternalWalkthrough] =
     useState<WalkthroughState | null>(defaultWalkthrough ?? null);
@@ -538,11 +541,12 @@ const ValidViewer = forwardRef<
   };
   return (
     <div
+      ref={viewerRef}
       className={`av-viewer ${className}`}
       style={style}
       aria-label={ariaLabel}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') select(null);
+        if (event.key === 'Escape' && !fullscreen.active) select(null);
       }}
     >
       <div
@@ -667,6 +671,15 @@ const ValidViewer = forwardRef<
               <button type="button" onClick={resetCamera}>
                 Reset camera
               </button>
+              {fullscreen.available && (
+                <button
+                  type="button"
+                  disabled={fullscreen.pending || fullscreen.otherActive}
+                  onClick={() => void fullscreen.toggle()}
+                >
+                  {fullscreen.active ? 'Exit fullscreen' : 'Enter fullscreen'}
+                </button>
+              )}
             </div>
           </div>
           {arrangeError && (
@@ -677,6 +690,11 @@ const ValidViewer = forwardRef<
           {captureError && (
             <p role="alert" className="av-export-error">
               {captureError}
+            </p>
+          )}
+          {fullscreen.error && (
+            <p role="alert" className="av-fullscreen-error">
+              {fullscreen.error}
             </p>
           )}
           <details className="av-node-list">

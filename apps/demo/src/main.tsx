@@ -1,4 +1,5 @@
 import { StrictMode, useMemo, useState, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArchitectureGraphSchema } from 'archgraph-core';
 import { createElkLayout } from 'archgraph-react/elk';
@@ -6,12 +7,29 @@ import { ArchitectureViewer, getNodeColor } from 'archgraph-react';
 import 'archgraph-react/styles.css';
 import type { ArchitectureViewerHandle, NodeLabelMode } from 'archgraph-react';
 import { SavedViews } from './SavedViews';
+import { GraphCatalog } from './GraphCatalog';
+import type { DemoDataset } from './GraphCatalog';
 import { relationshipStyles } from './relationshipStyles';
 import sample from '../../../examples/distributed-system.json';
 import './demo.css';
 const graph = ArchitectureGraphSchema.parse(sample);
-const types = [...new Set(graph.nodes.map((node) => node.type))].sort();
-function Demo() {
+const sampleDataset: DemoDataset = {
+  id: 'commerce',
+  title: 'Commerce Platform',
+  graph,
+};
+function Demo({
+  dataset,
+  controls,
+}: {
+  dataset: DemoDataset;
+  controls: ReactNode;
+}) {
+  const graph = dataset.graph;
+  const types = useMemo(
+    () => [...new Set(graph.nodes.map((node) => node.type))].sort(),
+    [graph],
+  );
   const viewer = useRef<ArchitectureViewerHandle>(null);
   const [type, setType] = useState('all');
   const [layoutMode, setLayoutMode] = useState('advanced');
@@ -50,14 +68,19 @@ function Demo() {
       <section className="page-heading">
         <div>
           <p className="eyebrow">SYSTEM EXPLORER</p>
-          <h1>Commerce Platform</h1>
-          <p>One graph. A shared understanding of your system.</p>
+          <h1>{dataset.title}</h1>
+          <p>
+            {dataset.local
+              ? 'Imported graph · Validated in this browser.'
+              : 'One graph. A shared understanding of your system.'}
+          </p>
         </div>
         <div className="sample-badge">
           <span />
-          Example architecture
+          {dataset.local ? 'Local graph' : 'Example architecture'}
         </div>
       </section>
+      {controls}
       <div className="filterbar">
         <div>
           <span className="filter-title">VIEW</span>
@@ -149,7 +172,7 @@ function Demo() {
           Group boundaries
         </label>
       </div>
-      <SavedViews viewer={viewer} />
+      {!dataset.local && <SavedViews viewer={viewer} />}
       <div className="viewer-shell">
         <ArchitectureViewer
           ref={viewer}
@@ -185,6 +208,10 @@ function Demo() {
 }
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Demo />
+    <GraphCatalog sample={sampleDataset}>
+      {(dataset, controls) => (
+        <Demo key={dataset.id} dataset={dataset} controls={controls} />
+      )}
+    </GraphCatalog>
   </StrictMode>,
 );

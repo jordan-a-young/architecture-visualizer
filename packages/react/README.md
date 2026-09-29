@@ -14,6 +14,14 @@ Selection may be controlled with `selectedNodeId` (null for none), or internal w
 
 Custom renderers are R3F components receiving node, selected/highlighted/dimmed flags, color and opacity. The viewer owns positioning and selection. Custom layouts map every node ID to a finite `[x,y,z]` tuple. Core data stays provider-independent. ESM with declarations and an explicit styles export. MIT licensed.
 
+## Fullscreen and browser support
+
+**Enter fullscreen** expands this viewer, including its legend and inspector, using the standard Fullscreen API. **Exit fullscreen**, Escape or the browser's fullscreen control restores the embedded view. Fullscreen changes resize the canvas; PNG capture uses its current pixel resolution. Selection, manual positions and graph data stay intact. Escape while the viewer is fullscreen is reserved for exiting fullscreen; outside fullscreen it clears selection as usual.
+
+The button is hidden when the standard API is unavailable or disabled by browser policy. In embedded applications, the host must permit fullscreen on the containing iframe. A rejected entry/exit request shows an inline error and can be retried. Multiple viewers track their own fullscreen state; controls on other viewers are disabled while another element is fullscreen. Fullscreen is transient browser state and is not stored in `ViewerViewState`. On narrow screens the fullscreen viewer scrolls so the inspector remains reachable.
+
+The installed Three.js renderer requires **WebGL2**. A WebGL1-only browser uses the keyboard-accessible inspector fallback; the package does not attempt an unsupported WebGL1 renderer. Fullscreen and graph inspection can still work without a 3D canvas. No extra browser polyfills or dependencies are included.
+
 ## Node labels
 
 Node captions are compact, single-line names placed beside the projected node geometry. They stay a readable screen size as you zoom, rather than growing with the mesh. Long names use an ellipsis; the full name remains in the native tooltip, accessible button name, Browse nodes list and inspector. Type and group context remain in the tooltip and inspector instead of a second caption line.

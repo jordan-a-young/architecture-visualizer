@@ -294,6 +294,7 @@
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  pointer-events: auto;
 }
 .av-toolbar button:disabled {
   cursor: default;
@@ -306,6 +307,26 @@
   right: 20px;
   z-index: 60;
   padding: 10px;
+  background: #fff5f5;
+  color: #783d3d;
+}
+
+/* Fullscreen: viewer fills the screen */
+.av-viewer:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  border-radius: 0;
+  border: none;
+  overflow: auto;
+}
+.av-fullscreen-error {
+  position: absolute;
+  z-index: 30;
+  left: 20px;
+  bottom: 45px;
+  max-width: calc(100% - 40px);
+  padding: 8px;
   background: #fff5f5;
   color: #783d3d;
 }

@@ -244,3 +244,36 @@ footer i {
   color: #344257;
   font: inherit;
 }
+.graph-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding-bottom: 16px;
+  font-size: 11px;
+  color: #53677f;
+}
+.graph-picker label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+}
+.graph-picker input,
+.graph-picker select {
+  max-width: 100%;
+  font: inherit;
+  color: inherit;
+}
+.graph-picker select {
+  padding: 5px;
+  border: 1px solid #dfe5eb;
+  border-radius: 5px;
+  background: white;
+}
+.graph-picker [role='alert'] {
+  width: 100%;
+  margin: 0;
+  color: #783d3d;
+}
