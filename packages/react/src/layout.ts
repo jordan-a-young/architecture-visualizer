@@ -108,7 +108,7 @@ export function validateLayoutGeometry(
       )
     )
       throw new Error('Layout node sizes must be finite and positive.');
-  for (const path of geometry.edgePaths?.values() ?? [])
+  for (const path of geometry.edgePaths?.values() ?? []) {
     if (
       path.length < 2 ||
       path.some((p) => p.length !== 3 || !p.every(Number.isFinite))
@@ -116,5 +116,10 @@ export function validateLayoutGeometry(
       throw new Error(
         'Layout edge paths must contain at least two finite positions.',
       );
+    if (
+      !path.some((p) => Math.hypot(...p.map((v, i) => v - path[0]![i]!)) > 1e-8)
+    )
+      throw new Error('Layout edge paths must contain distinct positions.');
+  }
   return geometry;
 }
