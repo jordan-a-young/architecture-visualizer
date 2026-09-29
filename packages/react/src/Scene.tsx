@@ -370,24 +370,14 @@ function SupportedScene({
   );
 }
 
-/** Probe WebGL before mounting R3F. Tries webgl2 then webgl — both work with R3F.
- * Falls back only if neither context is available at all (e.g. headless or explicitly disabled).
- * R3F's own `fallback` prop handles runtime failures inside the Canvas. */
+/** Probe WebGL2 before mounting R3F, whose async renderer initialization can reject outside a React boundary. */
 export function GraphScene(props: GraphSceneProps) {
   const [supported, setSupported] = useState<boolean | null>(null);
   useEffect(() => {
     try {
-      const canvas = document.createElement('canvas');
-      const ctx =
-        canvas.getContext('webgl2') ??
-        canvas.getContext('webgl') ??
-        canvas.getContext('experimental-webgl');
-      setSupported(ctx !== null);
-      if (ctx) {
-        (ctx as WebGLRenderingContext)
-          .getExtension('WEBGL_lose_context')
-          ?.loseContext();
-      }
+      const context = document.createElement('canvas').getContext('webgl2');
+      setSupported(context !== null);
+      context?.getExtension('WEBGL_lose_context')?.loseContext();
     } catch {
       setSupported(false);
     }
@@ -401,7 +391,7 @@ export function GraphScene(props: GraphSceneProps) {
   if (!supported)
     return (
       <p role="status" className="av-scene-fallback">
-        3D rendering requires WebGL. Use Browse nodes to inspect this graph.
+        3D rendering requires WebGL2. Use Browse nodes to inspect this graph.
       </p>
     );
   return <SupportedScene {...props} />;
