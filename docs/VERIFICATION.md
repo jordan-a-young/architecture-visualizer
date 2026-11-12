@@ -1,5 +1,47 @@
 # Verification record
 
+## Toolchain migration — 2026-11-12
+
+Development uses Node 26.13.1 and pnpm 12.18.0, with Vite+ and its core alias
+pinned to 1.6.0 and Vitest/coverage to 5.1.0 in the workspace catalog.
+TypeScript remains 5.9.3. The standalone packed consumer deliberately uses Vite 7.
+Peer exceptions accept core's 1.6.0 alias version only for the verified
+`vitest@5.1.0` and `@vitest/mocker@5.1.0` Vite peers; `pnpm peers check` passes.
+
+The Vite 7/Vitest 3 baseline passed `pnpm check` (109 tests in 13 files).
+Before Vite+ migration, Vitest 4.1.12 passed coverage and TypeScript checks.
+Vitest 4's AST-based coverage changed core branch coverage from 98.13% to
+97.87%; statements, lines, and functions remain 100%. The same source inventory
+and thresholds are retained on Vitest 5.1.0. The generated `clearMocks: false`
+compatibility settings were removed after the same 109 tests passed with defaults.
+The fullscreen mock is a method, not a constructor, so its behavior is unchanged.
+
+Oxlint correctness rules and explicit TypeScript safeguards replace ESLint;
+Oxfmt preserves single quotes and trailing commas. Explicit TypeScript checks
+and declaration builds remain authoritative rather than adopting the optional
+Go checker. Vite 7's browser targets remain explicit across the Rolldown upgrade.
+`pnpm check`, `pnpm format:check`, `pnpm exec vp check`, and
+`TMPDIR=/tmp/opencode pnpm test:consumer` passed locally. Existing large-chunk
+advisories and the standalone consumer's Zod annotation warnings remain nonfatal.
+
+A clean `pnpm install --frozen-lockfile` passed. Chromium/SwiftShader exercised
+all 43 browser tests on an isolated loopback server: 41 passed initially; two
+tests assumed port 5173. After switching those tests to Playwright's configured
+base URL, all seven tests in their two files passed on port 5281. This retains
+WebGL2/fallback, offline requests, desktop/mobile interaction, and PNG gates.
+The first suite took 1.6 minutes; the focused rerun took 18.2 seconds.
+
+Primary CI uses pinned Node 26.13.1; a separate packed-consumer job retains
+Node 24.18.0 compatibility coverage. Locally,
+`TMPDIR=/tmp/opencode fnm exec --using 24.18.0 pnpm test:consumer` also passed.
+
+Migration references: [Vite 8](https://vite.dev/guide/migration),
+[Vitest 4](https://v4.vitest.dev/guide/migration),
+[Vitest 5](https://vitest.dev/guide/migration/), and
+[Vite+ migration rules](https://viteplus.dev/guide/migrate-rules).
+
+## Original verification
+
 Verified locally on 2026-09-19 with Node 24.19.0 and pnpm 11.19.0.
 
 | Check                               | Result                                                                                                       |

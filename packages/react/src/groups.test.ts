@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it } from 'vite-plus/test';
 import type { ArchitectureGraph } from 'archgraph-core';
 import { projectGroups } from './groups.js';
 import type { Position3 } from './layout.js';

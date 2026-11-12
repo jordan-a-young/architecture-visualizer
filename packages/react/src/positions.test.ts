@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import type { ArchitectureGraph } from 'archgraph-core';
 import { retainNodePositions, resolveNodePositions } from './positions.js';
 import type { Position3 } from './layout.js';

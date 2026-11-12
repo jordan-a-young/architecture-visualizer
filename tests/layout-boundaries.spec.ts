@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 test('advanced layout shows nested deployment boundaries, exports them, and preserves inspection through collapse', async ({
   page,
+  baseURL,
 }) => {
   const external: string[] = [];
   page.on('request', (r) => {
     if (
-      !r.url().startsWith('http://127.0.0.1:5173') &&
+      new URL(r.url()).origin !== new URL(baseURL!).origin &&
       !r.url().startsWith('data:')
     )
       external.push(r.url());

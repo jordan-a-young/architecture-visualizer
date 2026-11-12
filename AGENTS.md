@@ -68,12 +68,15 @@ Use the Node and pnpm versions specified in `package.json`; install with
 
 ## Development notes
 
-- Toolchain versions live in `package.json` and `pnpm-lock.yaml`; CI uses Node 24.
+- Toolchain versions live in `.node-version`, `package.json`, and the workspace catalog; CI uses Node 26.13.1.
   `pnpm dev` builds both packages before starting Vite at `http://127.0.0.1:5173`.
 - For package development after the first build, run core's
-  `tsc -p tsconfig.build.json --watch` and React's `vite build --watch` through
+  `tsc -p tsconfig.build.json --watch` and React's `vp build --watch` through
   `pnpm --filter archgraph-core exec` and `pnpm --filter archgraph-react exec`.
   Regenerate declarations after changing public types.
+- Root `vite.config.ts` owns Oxlint, Oxfmt, and Vitest configuration. Keep explicit
+  TypeScript 5.9 checks and declaration builds; optional Go type checking is disabled.
+  Keep Vite+ and core aliases aligned in the catalog with range-qualified overrides.
 - Vitest defaults to Node; React behavior files opt into jsdom with a file
   directive. Coverage thresholds apply to core only. Browser tests run separately
   in Chromium with SwiftShader; preserve the GPU flags in `playwright.config.ts`.

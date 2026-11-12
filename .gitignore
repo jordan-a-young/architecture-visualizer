@@ -7,3 +7,4 @@ artifacts/
 !.env.example
 test-results/
 playwright-report/
+.vitest/

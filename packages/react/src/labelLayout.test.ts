@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { overlaps, placeNodeLabel } from './labelLayout.js';
 const viewport = { left: 0, top: 0, right: 500, bottom: 400 };
 const node = { left: 200, top: 150, right: 240, bottom: 190 };

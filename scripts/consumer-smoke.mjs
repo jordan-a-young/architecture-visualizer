@@ -27,7 +27,7 @@ try {
     name: 'archgraph-external-consumer',
     private: true,
     type: 'module',
-    packageManager: 'pnpm@11.19.0',
+    packageManager: 'pnpm@12.18.0',
     dependencies: {
       ...Object.fromEntries(
         Object.entries(demo.dependencies).filter(([name]) => name !== 'elkjs'),
@@ -35,7 +35,13 @@ try {
       'archgraph-core': core,
       'archgraph-react': react,
     },
-    devDependencies: { ...demo.devDependencies, typescript: '~5.9.3' },
+    devDependencies: {
+      '@types/react': demo.devDependencies['@types/react'],
+      '@types/react-dom': demo.devDependencies['@types/react-dom'],
+      '@types/three': demo.devDependencies['@types/three'],
+      vite: '^7.2.2',
+      typescript: '~5.9.3',
+    },
   });
   write(
     'pnpm-workspace.yaml',
