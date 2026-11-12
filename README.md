@@ -31,14 +31,14 @@ architecture-visualizer/
 
 ## Run locally
 
-Use Node.js 22.12+ (Node 24 is also supported) and pnpm 11.19.0. Install pnpm with your preferred package manager; `npm install -g pnpm@11.19.0` is one option.
+Use Node.js 26.13.1 (`.node-version`) and pnpm 12.18.0 (`packageManager`) for development and CI.
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open http://127.0.0.1:5173. `pnpm dev` first builds both packages, then starts Vite. Changes to demo files hot reload. When editing package sources, run `pnpm --filter archgraph-core exec tsc -p tsconfig.build.json --watch` and `pnpm --filter archgraph-react exec vite build --watch` in separate terminals after the initial build. Rerun the React package build to refresh declarations after changing public types.
+Open http://127.0.0.1:5173. `pnpm dev` first builds both packages, then starts Vite+. Changes to demo files hot reload. When editing package sources, run `pnpm --filter archgraph-core exec tsc -p tsconfig.build.json --watch` and `pnpm --filter archgraph-react exec vp build --watch` in separate terminals after the initial build. Rerun the React package build to refresh declarations after changing public types.
 
 The demo contains a frontend, gateway, three services, two databases, a queue, worker, and shared library. Links use example.com placeholders. The demo owns its title, filter controls, node legend and relationship style conventions. The viewer supplies an optional relationship legend using consumer-defined labels and actual rendered styles.
 
@@ -231,7 +231,7 @@ pnpm exec playwright install chromium
 pnpm test:browser          # real canvas, selection, filtering, links, reset, zero external requests
 ```
 
-Core builds with TypeScript; React builds with Vite library mode and TypeScript declaration emission. The demo has no source aliases into the libraries. Package checks use an isolated temporary application, not workspace symlinks. No check publishes anything. See [publishing](docs/PUBLISHING.md) and [verification](docs/VERIFICATION.md).
+Core builds with TypeScript; React builds with Vite+ library mode and TypeScript 5.9 declaration emission. Root `vite.config.ts` owns Oxlint, Oxfmt, and Vitest configuration. Explicit TypeScript checks remain authoritative; the optional Go checker is disabled to preserve existing compiler settings. The demo has no source aliases into the libraries. Package checks use an isolated temporary application with standalone Vite 7, not workspace symlinks or Vite+. Browser tests start their own strict-port server; set `ARCHVIZ_PORT` to select an isolated port. No check publishes anything. See [publishing](docs/PUBLISHING.md) and [verification](docs/VERIFICATION.md).
 
 ## Dependency decisions
 

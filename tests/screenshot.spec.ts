@@ -205,13 +205,17 @@ test('PNG encoder failure is visible and export can be retried', async ({
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
-test('mobile high-DPI PNG uses canvas resolution', async ({ browser }) => {
+test('mobile high-DPI PNG uses canvas resolution', async ({
+  browser,
+  baseURL,
+}) => {
   const context = await browser.newContext({
+    baseURL,
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
   });
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:5173/interaction-test.html');
+  await page.goto('/interaction-test.html');
   const button = page.getByRole('button', { name: 'Download PNG' });
   await expect(button).toBeEnabled();
   const encoded = await download(

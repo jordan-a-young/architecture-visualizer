@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it } from 'vite-plus/test';
 import { parseViewState } from './viewState.js';
 const view = {
   version: 1,

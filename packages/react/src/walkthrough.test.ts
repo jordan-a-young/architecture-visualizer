@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import type { ArchitectureGraph } from 'archgraph-core';
 import { resolveWalkthrough } from './walkthrough.js';
 import { getEdgeKey } from './edgeKey.js';

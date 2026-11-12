@@ -292,14 +292,12 @@ export function routeEdges(
     ) {
       const path = [
         from,
-        ...middle.map(
-          (p, i): Position3 => [
-            p[0],
-            source[1] +
-              ((target[1] - source[1]) * i) / Math.max(1, middle.length - 1),
-            p[2],
-          ],
-        ),
+        ...middle.map((p, i): Position3 => [
+          p[0],
+          source[1] +
+            ((target[1] - source[1]) * i) / Math.max(1, middle.length - 1),
+          p[2],
+        ]),
         to,
       ];
       paths.set(key, path);
